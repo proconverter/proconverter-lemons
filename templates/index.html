@@ -1,1 +1,511 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Brushset Converter</title>
+    <style>
+        body {
+            font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+            background-color: #EAEAEA;
+            color: #000000;
+            margin: 0;
+            padding: 40px 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            font-weight: 400;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
+        .main-title {
+            font-size: 18px;
+            font-weight: 500;
+            margin-bottom: 20px;
+            letter-spacing: 0.8px;
+            font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+            text-align: center;
+            line-height: 1.2;
+        }
+
+        @media (max-width: 480px) {
+            .main-title {
+                font-size: 16px;
+                letter-spacing: 0.5px;
+                line-height: 1.3;
+            }
+        }
+
+        .converter-card {
+            background-color: #FFFFFF;
+            border-radius: 24px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.05);
+            width: 100%;
+            max-width: 400px;
+            padding: 24px;
+            box-sizing: border-box;
+            margin-bottom: 20px;
+        }
+
+        .step-label {
+            font-size: 16px;
+            font-weight: 500;
+            margin-bottom: 12px;
+            font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+        }
+
+        input[type="text"] {
+            width: 100%;
+            padding: 14px;
+            font-size: 16px;
+            border: none;
+            border-radius: 12px;
+            box-sizing: border-box;
+            background-color: #2D2D2D;
+            color: #FFFFFF;
+            text-align: center;
+            margin-bottom: 24px;
+            font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+            font-weight: 400;
+        }
+        input[type="text"]::placeholder {
+            color: #A0A0A0;
+            font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+        }
+
+        .upload-area-label {
+            display: block;
+            cursor: pointer;
+        }
+
+        .upload-area {
+            border: 2px dashed #D0D0D0;
+            border-radius: 16px;
+            padding: 30px;
+            text-align: center;
+            margin-bottom: 20px;
+            transition: border-color 0.2s ease;
+        }
+        .upload-area:hover {
+            border-color: #999;
+        }
+        .upload-area svg {
+            margin-bottom: 12px;
+        }
+        .upload-area p {
+            color: #666;
+            font-size: 14px;
+            margin: 4px 0 0 0;
+            font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+            font-weight: 400;
+        }
+
+        .upload-requirement {
+            text-align: center;
+            font-size: 14px;
+            color: #555;
+            margin-bottom: 16px;
+            font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+            font-weight: 400;
+        }
+
+        .options-section {
+            margin-bottom: 20px;
+            padding: 10px;
+            background-color: #f8f8f8;
+            border-radius: 8px;
+            font-size: 14px;
+        }
+        .options-section label {
+            display: flex;
+            align-items: center;
+            cursor: pointer;
+        }
+        .options-section input[type="checkbox"] {
+            margin-right: 10px;
+        }
+        .options-section .note {
+            font-size: 12px;
+            color: #666;
+            margin-left: 24px;
+        }
+
+        .submit-button {
+            width: 100%;
+            padding: 16px;
+            font-size: 16px;
+            font-weight: 500;
+            border-radius: 12px;
+            border: none;
+            cursor: pointer;
+            background-color: #2D2D2D;
+            color: #FFFFFF;
+            font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+            transition: background-color 0.2s ease;
+        }
+        .submit-button:hover {
+            background-color: #1a1a1a;
+        }
+        .submit-button:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+
+        .get-token-section {
+            text-align: center;
+        }
+        .get-token-section p {
+            font-size: 16px;
+            color: #333;
+            margin-bottom: 12px;
+            font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+            font-weight: 400;
+        }
+        .get-token-button {
+            display: inline-block;
+            padding: 14px 28px;
+            font-size: 16px;
+            font-weight: 600;
+            border-radius: 12px;
+            border: none;
+            cursor: pointer;
+            background-color: #00AEEF;
+            color: #FFFFFF;
+            text-decoration: none;
+            margin-bottom: 20px;
+            font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+            transition: background-color 0.2s ease;
+        }
+        .get-token-button:hover {
+            background-color: #0099d4;
+        }
+
+        .message-area {
+            padding: 12px;
+            margin-bottom: 20px;
+            border-radius: 8px;
+            text-align: center;
+            font-size: 14px;
+            font-weight: 400;
+            font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+            display: none; 
+        }
+        .message-info {
+            background-color: #e2e3e5;
+            color: #383d41;
+        }
+        .message-error {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+
+        .file-name {
+            margin-top: 10px;
+            font-size: 14px;
+            color: #666;
+            text-align: center;
+            font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+        }
+        .file-name ul {
+            list-style-type: none;
+            padding: 0;
+            margin: 0;
+            text-align: left;
+            font-size: 13px;
+        }
+        .file-name li {
+            background-color: #f7f7f7;
+            border-radius: 6px;
+            padding: 8px 12px;
+            margin-bottom: 5px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .file-name .file-item-name {
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            margin-right: 10px;
+        }
+        .file-name .file-item-status {
+            font-weight: 500;
+            font-size: 12px;
+            padding: 3px 8px;
+            border-radius: 10px;
+            white-space: nowrap;
+        }
+        .status-ready { color: #3a7c3e; background-color: #e2efd8; }
+        .status-pending { color: #666; background-color: #f0f0f0; }
+        .status-processing { color: #7a5a00; background-color: #fff4d5; }
+        .status-completed { color: #005a9e; background-color: #dceaf5; }
+        .status-error { color: #721c24; background-color: #f8d7da; }
+
+        .footer {
+            margin-top: 40px;
+            padding-top: 20px;
+            border-top: 1px solid #D0D0D0;
+            text-align: center;
+            font-size: 12px;
+            color: #666;
+            width: 100%;
+            max-width: 400px;
+        }
+        .footer a {
+            color: #666;
+            text-decoration: none;
+            margin: 0 8px;
+            font-weight: 400;
+        }
+        .footer a:hover {
+            text-decoration: underline;
+        }
+        
+        .modal-overlay { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.5); animation: fadeIn 0.3s; }
+        .modal-content { background-color: #fefefe; margin: 15% auto; padding: 25px; border: 1px solid #888; border-radius: 16px; width: 90%; max-width: 500px; position: relative; font-family: "Helvetica Neue", Helvetica, Arial, sans-serif; font-size: 14px; line-height: 1.6; color: #333; }
+        .modal-content h2 { font-size: 16px; font-weight: 600; margin-top: 0; }
+        .modal-content h3 { font-size: 15px; font-weight: 600; margin-top: 20px; margin-bottom: 5px; }
+        .modal-content p { margin-bottom: 10px; }
+        .close-button { color: #aaa; float: right; font-size: 28px; font-weight: bold; position: absolute; top: 10px; right: 20px; }
+        .close-button:hover, .close-button:focus { color: black; text-decoration: none; cursor: pointer; }
+        @keyframes fadeIn { from {opacity: 0} to {opacity: 1} }
+    </style>
+</head>
+<body>
+    <h1 class="main-title">CONVERT YOUR PROCREATE BRUSHSET</h1>
+
+    <div class="converter-card">
+        <form id="uploadForm">
+            <p class="step-label">Step 1: Enter Your Etsy Order Id.</p>
+            <input type="text" id="order_id" name="order_id" placeholder="e.g., 123456789" required>
+
+            <p class="step-label">Step 2: Upload Your .brushset File(s)</p>
+            
+            <label for="brush_file" class="upload-area-label">
+                <div class="upload-area">
+                    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M14 2H6C5.46957 2 4.96086 2.21071 4.58579 2.58579C4.21071 2.96086 4 3.46957 4 4V20C4 20.5304 4.21071 21.0391 4.58579 21.4142C4.96086 21.7893 5.46957 22 6 22H18C18.5304 22 19.0391 21.7893 19.4142 21.4142C19.7893 21.0391 20 20.5304 20 20V8L14 2Z" stroke="#D0D0D0" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        <path d="M14 2V8H20" stroke="#D0D0D0" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        <path d="M12 18V12" stroke="#D0D0D0" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        <path d="M9 15L12 12L15 15" stroke="#D0D0D0" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                    <p><span style="color: #000; font-weight: 500; text-decoration: underline;">Click to upload</span> or drag and drop</p>
+                    <p>Maximum 10 files. Maximum file size 50 MB.</p>
+                </div>
+            </label>
+            
+            <input type="file" id="brush_file" name="brush_files" accept=".brushset" required style="display: none;" multiple>
+            <div class="file-name" id="fileName"></div>
+
+            <div class="message-area message-info" style="display: block;">
+                This tool extracts stamp images, not complex brush textures.
+            </div>
+
+            <p class="upload-requirement">Upload Requirement: Must be valid Procreate .brushset file(s ).</p>
+
+            <div class="options-section">
+                <label for="make_transparent">
+                    <input type="checkbox" id="make_transparent" name="make_transparent" value="true">
+                    <span>Convert to transparent PNGs</span>
+                </label>
+                <div class="note">(Slower processing. Use for non-transparent stamps.)</div>
+            </div>
+
+            <button type="submit" class="submit-button" id="submitBtn" disabled>Convert Your Brushset</button>
+        </form>
+    </div>
+
+    <div class="get-token-section">
+        <p>Haven't got your etsy order ID yet?</p>
+        <a href="https://www.etsy.com/shop/PresentAndCherish" target="_blank" class="get-token-button">Get Token Here</a>
+    </div>
+
+    <footer class="footer">
+        <p>
+            <a href="https://www.etsy.com/shop/PresentAndCherish" target="_blank" style="text-decoration: none; color: inherit;">
+                &copy; 2025 PresentAndCherish. All rights reserved.
+            </a>
+        </p>
+        <p>
+            <a href="javascript:void(0 );" onclick="openModal()">Terms & Privacy</a>
+        </p>
+    </footer>
+
+    <div id="policyModal" class="modal-overlay">
+        <div class="modal-content">
+            <span class="close-button" onclick="closeModal()">&times;</span>
+            <h2>Privacy Policy & Terms of Service</h2>
+            <p><strong>Effective Date:</strong> 13 August 2025</p>
+            <h3>Privacy Policy</h3>
+            <p>PresentandCherish (“we,” “our,” or “us”) collects your Etsy Order ID only to verify your purchase of the associated digital product. This data is processed via our Etsy integration and not used for marketing. We do not store your Order ID after verification. We never sell or share your details except if required by law. For questions, contact Hope at PresentAndCherish.</p>
+            <h3>Terms of Service</h3>
+            <p>By using this site, you confirm that you are the rightful purchaser of the product and agree to provide an accurate Etsy Order ID. File delivery depends on a valid Order ID and compatible .brushset files. We are not responsible for delays, failed deliveries, or compatibility issues caused by user error or technical problems beyond our control. These terms may be updated at any time without notice.</p>
+        </div>
+    </div>
+
+    <script>
+        const modal = document.getElementById('policyModal');
+        function openModal() { modal.style.display = "block"; }
+        function closeModal() { modal.style.display = "none"; }
+        window.onclick = function(event) {
+            if (event.target == modal) { closeModal(); }
+        }
+
+        const fileInput = document.getElementById('brush_file');
+        const fileNameDisplay = document.getElementById('fileName');
+        const submitBtn = document.getElementById('submitBtn');
+        const uploadForm = document.getElementById('uploadForm');
+        const uploadArea = document.querySelector('.upload-area');
+        const messageArea = document.querySelector('.message-area');
+
+        function showMessage(text, isError = false) {
+            messageArea.textContent = text;
+            messageArea.className = isError ? 'message-area message-error' : 'message-area message-info';
+            messageArea.style.display = 'block';
+        }
+
+        function updateFileStatus(fileIdentifier, status, statusClass) {
+            const statusElement = document.querySelector(`[data-file-id="${fileIdentifier}"] .file-item-status`);
+            if (statusElement) {
+                statusElement.textContent = status;
+                statusElement.className = `file-item-status ${statusClass}`;
+            }
+        }
+
+        function handleFiles(files) {
+            if (files.length === 0) {
+                fileNameDisplay.innerHTML = '';
+                submitBtn.disabled = true;
+                return;
+            }
+
+            if (files.length > 10) {
+                showMessage('Error: You can upload a maximum of 10 files.', true);
+                fileInput.value = '';
+                fileNameDisplay.innerHTML = '';
+                submitBtn.disabled = true;
+                return;
+            }
+
+            let fileListHtml = '<ul>';
+            let allFilesValid = true;
+            for (let i = 0; i < files.length; i++) {
+                const file = files[i];
+                const fileId = `${file.name}-${file.lastModified}`;
+                const isValid = file.name.toLowerCase().endsWith('.brushset');
+                const statusText = isValid ? 'Ready' : 'Invalid';
+                const statusClass = isValid ? 'status-ready' : 'status-error';
+                
+                fileListHtml += `
+                    <li data-file-id="${fileId}">
+                        <span class="file-item-name">${file.name}</span>
+                        <span class="file-item-status ${statusClass}">${statusText}</span>
+                    </li>`;
+                
+                if (!isValid) allFilesValid = false;
+            }
+            fileListHtml += '</ul>';
+            fileNameDisplay.innerHTML = fileListHtml;
+            
+            if (allFilesValid) {
+                submitBtn.disabled = false;
+                messageArea.style.display = 'none';
+            } else {
+                showMessage('Error: One or more files are not valid .brushset files.', true);
+                submitBtn.disabled = true;
+            }
+        }
+
+        fileInput.addEventListener('change', (e) => handleFiles(e.target.files));
+        uploadArea.addEventListener('dragover', (e) => { e.preventDefault(); uploadArea.style.borderColor = '#999'; });
+        uploadArea.addEventListener('dragleave', (e) => { e.preventDefault(); uploadArea.style.borderColor = '#D0D0D0'; });
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadArea.style.borderColor = '#D0D0D0';
+            fileInput.files = e.dataTransfer.files;
+            handleFiles(e.dataTransfer.files);
+        });
+
+        uploadForm.addEventListener('submit', async function(e) {
+            e.preventDefault();
+
+            const orderIdInput = document.getElementById('order_id');
+            const makeTransparent = document.getElementById('make_transparent').checked;
+            const filesToProcess = Array.from(fileInput.files);
+
+            if (!orderIdInput.value.trim()) {
+                showMessage('Error: Please enter your Etsy Order ID.', true);
+                return;
+            }
+            if (filesToProcess.length === 0) {
+                showMessage('Error: Please select one or more .brushset files.', true);
+                return;
+            }
+
+            submitBtn.textContent = 'Converting...';
+            submitBtn.disabled = true;
+            showMessage('Starting conversion process...', false);
+
+            // Set all non-processed files to "Pending"
+            filesToProcess.forEach(file => {
+                const fileId = `${file.name}-${file.lastModified}`;
+                updateFileStatus(fileId, 'Pending', 'status-pending');
+            });
+
+            for (let i = 0; i < filesToProcess.length; i++) {
+                const file = filesToProcess[i];
+                const fileId = `${file.name}-${file.lastModified}`;
+                updateFileStatus(fileId, 'Processing...', 'status-processing');
+
+                const formData = new FormData();
+                formData.append('order_id', orderIdInput.value.trim());
+                formData.append('make_transparent', makeTransparent);
+                formData.append('brush_file', file);
+                formData.append('file_index', i);
+                formData.append('total_files', filesToProcess.length);
+
+                try {
+                    const response = await fetch('/convert-single', {
+                        method: 'POST',
+                        body: formData,
+                    });
+
+                    const result = await response.json();
+
+                    if (!response.ok) {
+                        throw new Error(result.message || 'An unknown error occurred.');
+                    }
+
+                    updateFileStatus(fileId, 'Completed', 'status-completed');
+
+                    if (result.download_url) {
+                        showMessage('All files converted! Your download will begin shortly.', false);
+                        // Use a link for the user to click, or redirect automatically
+                        const a = document.createElement('a');
+                        a.href = result.download_url;
+                        a.download = ''; // Browser will use filename from Content-Disposition
+                        document.body.appendChild(a);
+                        a.click();
+                        a.remove();
+                    }
+
+                } catch (error) {
+                    console.error('Processing failed for', file.name, ':', error);
+                    updateFileStatus(fileId, 'Error', 'status-error');
+                    showMessage(`Error processing ${file.name}: ${error.message}`, true);
+                    submitBtn.textContent = 'Convert Your Brushset';
+                    submitBtn.disabled = false;
+                    return; 
+                }
+            }
+
+            submitBtn.textContent = 'Convert Your Brushset';
+            submitBtn.disabled = false;
+        });
+    </script>
+
+</body>
+</html>
 
