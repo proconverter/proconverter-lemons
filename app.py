@@ -20,7 +20,6 @@ UPLOAD_FOLDER = 'uploads'
 os.makedirs(UPLOAD_FOLDER, exist_ok=True )
 
 # --- Lemon Squeezy API Helper Functions ---
-
 def validate_license_key(license_key):
     if not LEMONSQUEEZY_API_KEY:
         raise ValueError("LEMONSQUEEZY_API_KEY is not set in environment variables.")
@@ -34,28 +33,14 @@ def validate_license_key(license_key):
             uses = data.get('meta', {}).get('uses', 0)
             if uses < CREDITS_PER_PURCHASE:
                 return data
-            else:
-                return None
-        else:
-            return None
     except requests.exceptions.RequestException as e:
         print(f"Error communicating with Lemon Squeezy API: {e}")
-        return None
+    return None
 
 def increment_license_usage(license_id):
     headers = {'Accept': 'application/vnd.api+json', 'Content-Type': 'application/vnd.api+json', 'Authorization': f'Bearer {LEMONSQUEEZY_API_KEY}'}
-    # The official API uses a PATCH request with an increment value
-    payload = {
-        "data": {
-            "type": "licenses",
-            "id": str(license_id),
-            "attributes": {
-                "increment": 1
-            }
-        }
-    }
+    payload = {"data": {"type": "licenses", "id": str(license_id), "attributes": {"increment": 1}}}
     try:
-        # Note: It's a PATCH request, not POST
         response = requests.patch(f"{LEMONSQUEEZY_API_URL}/licenses/{license_id}", headers=headers, json=payload)
         response.raise_for_status()
         return True
@@ -63,8 +48,8 @@ def increment_license_usage(license_id):
         print(f"Error incrementing license usage: {e}")
         return False
 
-# --- Brush Processing Function ---
-def process_brushset(filepath, make_transparent=True):
+# --- Brush Processing Function (Simplified) ---
+def process_brushset(filepath):
     temp_extract_dir = os.path.join(UPLOAD_FOLDER, f"extract_{uuid.uuid4()}")
     os.makedirs(temp_extract_dir, exist_ok=True)
     extracted_image_paths = []
@@ -80,13 +65,9 @@ def process_brushset(filepath, make_transparent=True):
                     with Image.open(item_path) as img:
                         width, height = img.size
                         if width >= MIN_IMAGE_DIMENSION and height >= MIN_IMAGE_DIMENSION:
-                            final_image = img.copy()
-                            if make_transparent and final_image.mode == 'L':
-                                transparent_img = Image.new('RGBA', final_image.size, (0, 0, 0, 0))
-                                transparent_img.putalpha(final_image)
-                                final_image = transparent_img
+                            # No transparency logic, just save the image as PNG
                             temp_png_path = os.path.join(temp_extract_dir, f"processed_{uuid.uuid4()}.png")
-                            final_image.save(temp_png_path, 'PNG')
+                            img.save(temp_png_path, 'PNG')
                             extracted_image_paths.append(temp_png_path)
                 except (IOError, SyntaxError):
                     continue
@@ -100,7 +81,6 @@ def process_brushset(filepath, make_transparent=True):
         return [], None, "An unexpected error occurred during processing."
 
 # --- Main Application Routes ---
-
 @app.route('/')
 def index():
     return render_template('index.html')
@@ -111,9 +91,7 @@ def convert_single():
     session_id = request.form.get('session_id')
     brush_file = request.files.get('brush_file')
     is_last_file = request.form.get('is_last_file') == 'true'
-    # Correctly get the is_first_file flag from the new index.html
     is_first_file = request.form.get('is_first_file') == 'true'
-    make_transparent = request.form.get('make_transparent') == 'true'
 
     if not all([license_key, session_id, brush_file]):
         return jsonify({"message": "Missing required data."}), 400
@@ -121,17 +99,14 @@ def convert_single():
     session_dir = os.path.join(UPLOAD_FOLDER, session_id)
     os.makedirs(session_dir, exist_ok=True)
     
-    # Correctly handle the first file of the session
     if is_first_file:
         license_data = validate_license_key(license_key)
         if not license_data:
             shutil.rmtree(session_dir, ignore_errors=True)
             return jsonify({"message": "Invalid or expired license key."}), 403
-        # Save the license ID to the session folder
         with open(os.path.join(session_dir, ".valid"), "w") as f:
             f.write(str(license_data['meta']['license_key_id']))
 
-    # For every file, check if the session is valid
     if not os.path.exists(os.path.join(session_dir, ".valid")):
          return jsonify({"message": "Invalid session. Please start over."}), 403
 
@@ -139,7 +114,7 @@ def convert_single():
     filepath = os.path.join(session_dir, filename)
     brush_file.save(filepath)
 
-    processed_images, temp_extract_dir, error_message = process_brushset(filepath, make_transparent)
+    processed_images, temp_extract_dir, error_message = process_brushset(filepath)
     
     if error_message:
         shutil.rmtree(session_dir, ignore_errors=True)
@@ -159,18 +134,13 @@ def convert_single():
         archive_base_path = os.path.join(UPLOAD_FOLDER, session_id)
         shutil.make_archive(archive_base_path, 'zip', output_dir)
         
-        # Correctly read the license ID and increment usage
         with open(os.path.join(session_dir, ".valid"), "r") as f:
             license_id = f.read().strip()
         increment_license_usage(license_id)
         
-        # Clean up the entire session directory
         shutil.rmtree(session_dir, ignore_errors=True)
 
-        return jsonify({
-            "message": "Processing complete.",
-            "download_url": f"/download-zip/{final_zip_filename}"
-        })
+        return jsonify({"message": "Processing complete.", "download_url": f"/download-zip/{final_zip_filename}"})
 
     return jsonify({"message": "File processed successfully."})
 
