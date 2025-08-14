@@ -5,34 +5,34 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Procreate Stamp Converter</title>
     <style>
-        /* All CSS styles remain the same */
+        /* All original CSS styles are preserved */
         body { font-family: "Helvetica Neue", Helvetica, Arial, sans-serif; background-color: #EAEAEA; color: #000000; margin: 0; padding: 40px 20px; display: flex; justify-content: center; align-items: center; flex-direction: column; font-weight: 400; -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
-        .main-title { font-size: 18px; font-weight: 500; margin-bottom: 20px; letter-spacing: 0.8px; font-family: "Helvetica Neue", Helvetica, Arial, sans-serif; text-align: center; line-height: 1.2; }
+        .main-title { font-size: 18px; font-weight: 500; margin-bottom: 20px; letter-spacing: 0.8px; text-align: center; line-height: 1.2; }
         @media (max-width: 480px) { .main-title { font-size: 16px; letter-spacing: 0.5px; line-height: 1.3; } }
         .converter-card { background-color: #FFFFFF; border-radius: 24px; box-shadow: 0 8px 32px rgba(0, 0, 0, 0.05); width: 100%; max-width: 400px; padding: 24px; box-sizing: border-box; margin-bottom: 20px; }
-        .step-label { font-size: 16px; font-weight: 500; margin-bottom: 12px; font-family: "Helvetica Neue", Helvetica, Arial, sans-serif; }
-        input[type="text"] { width: 100%; padding: 14px; font-size: 16px; border: none; border-radius: 12px; box-sizing: border-box; background-color: #2D2D2D; color: #FFFFFF; text-align: center; margin-bottom: 24px; font-family: "Helvetica Neue", Helvetica, Arial, sans-serif; font-weight: 400; }
-        input[type="text"]::placeholder { color: #A0A0A0; font-family: "Helvetica Neue", Helvetica, Arial, sans-serif; }
+        .step-label { font-size: 16px; font-weight: 500; margin-bottom: 12px; }
+        input[type="text"] { width: 100%; padding: 14px; font-size: 16px; border: none; border-radius: 12px; box-sizing: border-box; background-color: #2D2D2D; color: #FFFFFF; text-align: center; margin-bottom: 24px; font-weight: 400; }
+        input[type="text"]::placeholder { color: #A0A0A0; }
         .upload-area-label { display: block; cursor: pointer; }
         .upload-area { border: 2px dashed #D0D0D0; border-radius: 16px; padding: 30px; text-align: center; margin-bottom: 20px; transition: border-color 0.2s ease; }
         .upload-area:hover { border-color: #999; }
         .upload-area svg { margin-bottom: 12px; }
-        .upload-area p { color: #666; font-size: 14px; margin: 4px 0 0 0; font-family: "Helvetica Neue", Helvetica, Arial, sans-serif; font-weight: 400; }
-        .upload-requirement { text-align: center; font-size: 14px; color: #555; margin-bottom: 16px; font-family: "Helvetica Neue", Helvetica, Arial, sans-serif; font-weight: 400; }
+        .upload-area p { color: #666; font-size: 14px; margin: 4px 0 0 0; font-weight: 400; }
+        .upload-requirement { text-align: center; font-size: 14px; color: #555; margin-bottom: 16px; font-weight: 400; }
         .option-checkbox { display: flex; align-items: center; justify-content: center; margin-bottom: 20px; }
         .option-checkbox input { margin-right: 10px; }
         .option-checkbox label { font-size: 14px; color: #333; }
-        .submit-button { width: 100%; padding: 16px; font-size: 16px; font-weight: 500; border-radius: 12px; border: none; cursor: pointer; background-color: #2D2D2D; color: #FFFFFF; font-family: "Helvetica Neue", Helvetica, Arial, sans-serif; transition: background-color 0.2s ease; }
+        .submit-button { width: 100%; padding: 16px; font-size: 16px; font-weight: 500; border-radius: 12px; border: none; cursor: pointer; background-color: #2D2D2D; color: #FFFFFF; transition: background-color 0.2s ease; }
         .submit-button:hover { background-color: #1a1a1a; }
         .submit-button:disabled { background-color: #ccc; cursor: not-allowed; }
         .get-token-section { text-align: center; }
-        .get-token-section p { font-size: 16px; color: #333; margin-bottom: 12px; font-family: "Helvetica Neue", Helvetica, Arial, sans-serif; font-weight: 400; }
-        .get-token-button { display: inline-block; padding: 14px 28px; font-size: 16px; font-weight: 600; border-radius: 12px; border: none; cursor: pointer; background-color: #00AEEF; color: #FFFFFF; text-decoration: none; margin-bottom: 20px; font-family: "Helvetica Neue", Helvetica, Arial, sans-serif; transition: background-color 0.2s ease; }
+        .get-token-section p { font-size: 16px; color: #333; margin-bottom: 12px; font-weight: 400; }
+        .get-token-button { display: inline-block; padding: 14px 28px; font-size: 16px; font-weight: 600; border-radius: 12px; border: none; cursor: pointer; background-color: #00AEEF; color: #FFFFFF; text-decoration: none; margin-bottom: 20px; transition: background-color 0.2s ease; }
         .get-token-button:hover { background-color: #0099d4; }
-        .message-area { padding: 12px; margin-bottom: 20px; border-radius: 8px; text-align: center; font-size: 14px; font-weight: 400; font-family: "Helvetica Neue", Helvetica, Arial, sans-serif; display: none; }
+        .message-area { padding: 12px; margin-bottom: 20px; border-radius: 8px; text-align: center; font-size: 14px; font-weight: 400; display: none; }
         .message-info { background-color: #e2e3e5; color: #383d41; }
         .message-error { background-color: #f8d7da; color: #721c24; }
-        .file-list { margin-top: 10px; font-size: 14px; color: #666; text-align: left; font-family: "Helvetica Neue", Helvetica, Arial, sans-serif; max-height: 150px; overflow-y: auto; border: 1px solid #eee; border-radius: 8px; padding: 10px; }
+        .file-list { margin-top: 10px; font-size: 14px; color: #666; text-align: left; max-height: 150px; overflow-y: auto; border: 1px solid #eee; border-radius: 8px; padding: 10px; display: none; }
         .file-list-item { display: flex; justify-content: space-between; align-items: center; padding: 4px 0; }
         .file-list-item .status { font-weight: 500; margin-left: 10px; }
         .status-pending { color: #888; }
@@ -43,7 +43,7 @@
         .footer a { color: #666; text-decoration: none; margin: 0 8px; font-weight: 400; }
         .footer a:hover { text-decoration: underline; }
         .modal-overlay { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.5); animation: fadeIn 0.3s; }
-        .modal-content { background-color: #fefefe; margin: 15% auto; padding: 25px; border: 1px solid #888; border-radius: 16px; width: 90%; max-width: 500px; position: relative; font-family: "Helvetica Neue", Helvetica, Arial, sans-serif; font-size: 14px; line-height: 1.6; color: #333; }
+        .modal-content { background-color: #fefefe; margin: 15% auto; padding: 25px; border: 1px solid #888; border-radius: 16px; width: 90%; max-width: 500px; position: relative; font-size: 14px; line-height: 1.6; color: #333; }
         .modal-content h2 { font-size: 16px; font-weight: 600; margin-top: 0; }
         .modal-content h3 { font-size: 15px; font-weight: 600; margin-top: 20px; margin-bottom: 5px; }
         .modal-content p { margin-bottom: 10px; }
@@ -64,4 +64,225 @@
             
             <label for="brush_files" class="upload-area-label">
                 <div class="upload-area">
-                    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M14 2H6C5.46957 2 4.96086 2.21071 4.58579 2.58579C4.21071 2.96086 4 3.46957 4 4V20C4 20.5304 4.21071 21.0391 4.58579 21.4142C4.96086 21.7893 5.46957 22 6 22H18C18.5304 22 19.0391 21.7893 19.4142 21.4142C19.7893 21.0391 20 20.5304 20 20V8L14 2Z" stroke="#D0D0D0" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M14 2V8H20" stroke="#D0D0D0" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M12 18V12" stroke="#D0D0D0" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M9 15L12 12L15 15" stroke="#D0D0D0" stroke-width
+                    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M14 2H6C5.46957 2 4.96086 2.21071 4.58579 2.58579C4.21071 2.96086 4 3.46957 4 4V20C4 20.5304 4.21071 21.0391 4.58579 21.4142C4.96086 21.7893 5.46957 22 6 22H18C18.5304 22 19.0391 21.7893 19.4142 21.4142C19.7893 21.0391 20 20.5304 20 20V8L14 2Z" stroke="#D0D0D0" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M14 2V8H20" stroke="#D0D0D0" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M12 18V12" stroke="#D0D0D0" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M9 15L12 12L15 15" stroke="#D0D0D0" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                    <p><span style="color: #000; font-weight: 500; text-decoration: underline;">Click to upload</span> or drag and drop</p>
+                    <p>Maximum file size 50 MB.</p>
+                </div>
+            </label>
+            
+            <input type="file" id="brush_files" name="brush_files" accept=".brushset" required multiple style="display: none;">
+            <div class="file-list" id="fileList"></div>
+
+            <div class="message-area message-info" id="initialMessage" style="display: block;">
+                This tool extracts stamp images, not complex brush textures.
+            </div>
+
+            <div class="option-checkbox">
+                <input type="checkbox" id="make_transparent" name="make_transparent" checked>
+                <label for="make_transparent">Make stamp backgrounds transparent (Recommended )</label>
+            </div>
+
+            <p class="upload-requirement">Upload Requirement: Must be valid Procreate .brushset files.</p>
+            <button type="submit" class="submit-button" id="submitBtn">Convert Your Brushsets</button>
+        </form>
+    </div>
+
+    <div class="get-token-section">
+        <p>Need more conversion credits?</p>
+        <a href="#" target="_blank" class="get-token-button" id="buyBtn">Buy Credits Here</a>
+    </div>
+
+    <footer class="footer">
+        <p>
+            <a href="#" target="_blank" style="text-decoration: none; color: inherit;">
+                &copy; 2025 PresentAndCherish. All rights reserved.
+            </a>
+        </p>
+        <p>
+            <a href="javascript:void(0);" onclick="openModal()">Terms & Privacy</a>
+        </p>
+    </footer>
+
+    <div id="policyModal" class="modal-overlay">
+        <div class="modal-content">
+            <span class="close-button" onclick="closeModal()">&times;</span>
+            <h2>Terms & Privacy</h2>
+            <p><strong>Effective Date:</strong> 14 August 2025</p>
+            <h3>Privacy Policy</h3>
+            <p>PresentandCherish (“we,” “our,” or “us”) collects your License Key to verify your purchase and process your Procreate brushset conversion. This data is processed via our payment partner (Lemon Squeezy) and not used for marketing. We never sell or share your details except if required by law. For questions, contact Hope at PresentAndCherish.</p>
+            <h3>Terms of Service</h3>
+            <p>By using this site, you confirm that you are the rightful owner of a valid license key. File delivery depends on a valid key and correct file uploads. We are not responsible for delays, failed deliveries, or compatibility issues caused by user error or technical problems beyond our control. These terms may be updated at any time without notice.</p>
+        </div>
+    </div>
+
+    <script>
+        // --- MODAL JAVASCRIPT ---
+        const modal = document.getElementById('policyModal');
+        function openModal() { modal.style.display = "block"; }
+        function closeModal() { modal.style.display = "none"; }
+        window.onclick = function(event) {
+            if (event.target == modal) { closeModal(); }
+        }
+
+        // --- FORM AND UPLOAD JAVASCRIPT ---
+        const fileInput = document.getElementById('brush_files');
+        const fileListDisplay = document.getElementById('fileList');
+        const submitBtn = document.getElementById('submitBtn');
+        const uploadForm = document.getElementById('uploadForm');
+        const uploadArea = document.querySelector('.upload-area');
+        const messageArea = document.querySelector('.message-area');
+        const initialMessage = document.getElementById('initialMessage');
+        let selectedFiles = [];
+
+        function showMessage(text, isError = false) {
+            initialMessage.style.display = 'none';
+            messageArea.textContent = text;
+            messageArea.className = isError ? 'message-area message-error' : 'message-area message-info';
+            messageArea.style.display = 'block';
+        }
+
+        function renderFileList() {
+            fileListDisplay.innerHTML = '';
+            if (selectedFiles.length === 0) {
+                fileListDisplay.style.display = 'none';
+                return;
+            }
+            fileListDisplay.style.display = 'block';
+            selectedFiles.forEach(file => {
+                const item = document.createElement('div');
+                item.className = 'file-list-item';
+                item.innerHTML = `
+                    <span>${file.name}</span>
+                    <span class="status status-pending" id="status-${file.id}">Pending</span>
+                `;
+                fileListDisplay.appendChild(item);
+            });
+        }
+
+        function handleFiles(files) {
+            selectedFiles = [];
+            let totalSize = 0;
+            let errors = [];
+
+            Array.from(files).forEach((file, index) => {
+                if (selectedFiles.length >= 10) {
+                    if (errors.indexOf('max_files') === -1) errors.push('max_files');
+                    return;
+                }
+                if (!file.name.toLowerCase().endsWith('.brushset')) {
+                    if (errors.indexOf('file_type') === -1) errors.push('file_type');
+                    return;
+                }
+                totalSize += file.size;
+                file.id = `file-${Date.now()}-${index}`;
+                selectedFiles.push(file);
+            });
+
+            if (totalSize > 50 * 1024 * 1024) {
+                errors.push('max_size');
+            }
+
+            if (errors.length > 0) {
+                let errorMsg = 'Error: ';
+                if (errors.includes('max_files')) errorMsg += 'You can upload a maximum of 10 files. ';
+                if (errors.includes('file_type')) errorMsg += 'Please select only .brushset files. ';
+                if (errors.includes('max_size')) errorMsg += 'Total file size cannot exceed 50MB.';
+                showMessage(errorMsg, true);
+                selectedFiles = [];
+            }
+            
+            renderFileList();
+            submitBtn.disabled = selectedFiles.length === 0;
+        }
+
+        fileInput.addEventListener('change', (e) => handleFiles(e.target.files));
+        
+        uploadArea.addEventListener('dragover', (e) => { e.preventDefault(); uploadArea.style.borderColor = '#999'; });
+        uploadArea.addEventListener('dragleave', (e) => { e.preventDefault(); uploadArea.style.borderColor = '#D0D0D0'; });
+        uploadArea.addEventListener('drop', (e) => { e.preventDefault(); uploadArea.style.borderColor = '#D0D0D0'; handleFiles(e.dataTransfer.files); });
+
+        uploadForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+
+            const licenseKeyInput = document.getElementById('license_key');
+            if (!licenseKeyInput.value.trim()) {
+                showMessage('Error: Please enter your License Key.', true);
+                return;
+            }
+            if (selectedFiles.length === 0) {
+                showMessage('Error: Please select at least one .brushset file.', true);
+                return;
+            }
+
+            submitBtn.textContent = 'Converting...';
+            submitBtn.disabled = true;
+            showMessage('Starting conversion process...', false);
+
+            const session_id = `session-${Date.now()}`;
+            let hasFailed = false;
+
+            (async () => {
+                for (let i = 0; i < selectedFiles.length; i++) {
+                    const file = selectedFiles[i];
+                    if (hasFailed) break;
+
+                    const statusElem = document.getElementById(`status-${file.id}`);
+                    statusElem.textContent = 'Processing...';
+                    statusElem.className = 'status status-processing';
+
+                    const formData = new FormData();
+                    formData.append('license_key', licenseKeyInput.value.trim());
+                    formData.append('brush_file', file);
+                    formData.append('session_id', session_id);
+                    formData.append('is_first_file', i === 0 ? 'true' : 'false');
+                    formData.append('is_last_file', i === selectedFiles.length - 1 ? 'true' : 'false');
+                    formData.append('make_transparent', document.getElementById('make_transparent').checked);
+
+                    try {
+                        const response = await fetch('/convert-single', {
+                            method: 'POST',
+                            body: formData,
+                        });
+
+                        const result = await response.json();
+
+                        if (!response.ok) {
+                            throw new Error(result.message || 'An unknown error occurred.');
+                        }
+
+                        statusElem.textContent = 'Completed';
+                        statusElem.className = 'status status-completed';
+
+                        if (result.download_url) {
+                            showMessage('All files processed! Your download will begin shortly.', false);
+                            const a = document.createElement('a');
+                            a.href = result.download_url;
+                            a.download = result.download_url.split('/').pop();
+                            document.body.appendChild(a);
+                            a.click();
+                            a.remove();
+                        }
+
+                    } catch (error) {
+                        console.error('Conversion failed for file:', file.name, error);
+                        statusElem.textContent = 'Failed';
+                        statusElem.className = 'status status-failed';
+                        showMessage(`Error: ${error.message}`, true);
+                        hasFailed = true;
+                    }
+                }
+
+                submitBtn.textContent = 'Convert Your Brushsets';
+                submitBtn.disabled = false;
+                if (!hasFailed) {
+                    setTimeout(() => {
+                        messageArea.style.display = 'none';
+                        initialMessage.style.display = 'block';
+                    }, 5000);
+                }
+            })();
+        });
+    </script>
+
+</body>
+</html>
