@@ -44,8 +44,18 @@ def validate_license_key(license_key):
 
 def increment_license_usage(license_id):
     headers = {'Accept': 'application/vnd.api+json', 'Content-Type': 'application/vnd.api+json', 'Authorization': f'Bearer {LEMONSQUEEZY_API_KEY}'}
-    payload = {"increment": 1}
+    # The official API uses a PATCH request with an increment value
+    payload = {
+        "data": {
+            "type": "licenses",
+            "id": str(license_id),
+            "attributes": {
+                "increment": 1
+            }
+        }
+    }
     try:
+        # Note: It's a PATCH request, not POST
         response = requests.patch(f"{LEMONSQUEEZY_API_URL}/licenses/{license_id}", headers=headers, json=payload)
         response.raise_for_status()
         return True
@@ -101,6 +111,7 @@ def convert_single():
     session_id = request.form.get('session_id')
     brush_file = request.files.get('brush_file')
     is_last_file = request.form.get('is_last_file') == 'true'
+    # Correctly get the is_first_file flag from the new index.html
     is_first_file = request.form.get('is_first_file') == 'true'
     make_transparent = request.form.get('make_transparent') == 'true'
 
@@ -110,14 +121,17 @@ def convert_single():
     session_dir = os.path.join(UPLOAD_FOLDER, session_id)
     os.makedirs(session_dir, exist_ok=True)
     
+    # Correctly handle the first file of the session
     if is_first_file:
         license_data = validate_license_key(license_key)
         if not license_data:
             shutil.rmtree(session_dir, ignore_errors=True)
             return jsonify({"message": "Invalid or expired license key."}), 403
+        # Save the license ID to the session folder
         with open(os.path.join(session_dir, ".valid"), "w") as f:
-            f.write(str(license_data['data']['id']))
+            f.write(str(license_data['meta']['license_key_id']))
 
+    # For every file, check if the session is valid
     if not os.path.exists(os.path.join(session_dir, ".valid")):
          return jsonify({"message": "Invalid session. Please start over."}), 403
 
@@ -142,13 +156,15 @@ def convert_single():
 
     if is_last_file:
         final_zip_filename = f"{session_id}.zip"
-        archive_path = os.path.join(UPLOAD_FOLDER, session_id)
-        shutil.make_archive(archive_path, 'zip', output_dir)
+        archive_base_path = os.path.join(UPLOAD_FOLDER, session_id)
+        shutil.make_archive(archive_base_path, 'zip', output_dir)
         
+        # Correctly read the license ID and increment usage
         with open(os.path.join(session_dir, ".valid"), "r") as f:
-            license_id = f.read()
+            license_id = f.read().strip()
         increment_license_usage(license_id)
         
+        # Clean up the entire session directory
         shutil.rmtree(session_dir, ignore_errors=True)
 
         return jsonify({
