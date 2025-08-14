@@ -19,23 +19,45 @@ MIN_IMAGE_DIMENSION = 1024
 UPLOAD_FOLDER = 'uploads'
 os.makedirs(UPLOAD_FOLDER, exist_ok=True )
 
-# --- Lemon Squeezy API Helper Functions ---
+# --- Lemon Squeezy API Helper Functions (CORRECTED) ---
 def validate_license_key(license_key):
     if not LEMONSQUEEZY_API_KEY:
         raise ValueError("LEMONSQUEEZY_API_KEY is not set in environment variables.")
-    headers = {'Accept': 'application/vnd.api+json', 'Content-Type': 'application/vnd.api+json', 'Authorization': f'Bearer {LEMONSQUEEZY_API_KEY}'}
-    params = {'license_key': license_key}
+    
+    headers = {
+        'Accept': 'application/vnd.api+json',
+        'Content-Type': 'application/vnd.api+json',
+        'Authorization': f'Bearer {LEMONSQUEEZY_API_KEY}'
+    }
+    params = {
+        'license_key': license_key
+    }
+    
     try:
         response = requests.get(f"{LEMONSQUEEZY_API_URL}/licenses/validate", headers=headers, params=params)
         response.raise_for_status()
         data = response.json()
+        
         if data.get('valid'):
             uses = data.get('meta', {}).get('uses', 0)
             if uses < CREDITS_PER_PURCHASE:
                 return data
+            else:
+                # This key is valid but has no uses left.
+                print(f"License key {license_key} has no uses left.")
+                return None
+        else:
+            # The key itself is invalid according to the API.
+            print(f"License key {license_key} is invalid per API response.")
+            return None
+
+    except requests.exceptions.HTTPError as e:
+        # This will catch 4xx and 5xx errors, like 404 Not Found if the key doesn't exist
+        print(f"HTTP Error validating license key {license_key}: {e.response.status_code} - {e.response.text}")
+        return None
     except requests.exceptions.RequestException as e:
-        print(f"Error communicating with Lemon Squeezy API: {e}")
-    return None
+        print(f"Network error communicating with Lemon Squeezy API: {e}")
+        return None
 
 def increment_license_usage(license_id):
     headers = {'Accept': 'application/vnd.api+json', 'Content-Type': 'application/vnd.api+json', 'Authorization': f'Bearer {LEMONSQUEEZY_API_KEY}'}
@@ -48,7 +70,7 @@ def increment_license_usage(license_id):
         print(f"Error incrementing license usage: {e}")
         return False
 
-# --- Brush Processing Function (Simplified) ---
+# --- Brush Processing Function ---
 def process_brushset(filepath):
     temp_extract_dir = os.path.join(UPLOAD_FOLDER, f"extract_{uuid.uuid4()}")
     os.makedirs(temp_extract_dir, exist_ok=True)
@@ -65,7 +87,6 @@ def process_brushset(filepath):
                     with Image.open(item_path) as img:
                         width, height = img.size
                         if width >= MIN_IMAGE_DIMENSION and height >= MIN_IMAGE_DIMENSION:
-                            # No transparency logic, just save the image as PNG
                             temp_png_path = os.path.join(temp_extract_dir, f"processed_{uuid.uuid4()}.png")
                             img.save(temp_png_path, 'PNG')
                             extracted_image_paths.append(temp_png_path)
@@ -138,7 +159,8 @@ def convert_single():
             license_id = f.read().strip()
         increment_license_usage(license_id)
         
-        shutil.rmtree(session_dir, ignore_errors=True)
+        shutil.rmtree(output_dir, ignore_errors=True)
+        os.remove(os.path.join(session_dir, ".valid"))
 
         return jsonify({"message": "Processing complete.", "download_url": f"/download-zip/{final_zip_filename}"})
 
