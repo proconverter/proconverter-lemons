@@ -19,10 +19,7 @@
         .upload-area svg { margin-bottom: 12px; }
         .upload-area p { color: #666; font-size: 14px; margin: 4px 0 0 0; font-weight: 400; }
         .upload-requirement { text-align: center; font-size: 14px; color: #555; margin-bottom: 16px; font-weight: 400; }
-        .option-checkbox { display: flex; align-items: center; justify-content: center; margin-bottom: 20px; }
-        .option-checkbox input { margin-right: 10px; }
-        .option-checkbox label { font-size: 14px; color: #333; }
-        .submit-button { width: 100%; padding: 16px; font-size: 16px; font-weight: 500; border-radius: 12px; border: none; cursor: pointer; background-color: #2D2D2D; color: #FFFFFF; transition: background-color 0.2s ease; }
+        .submit-button { width: 100%; padding: 16px; font-size: 16px; font-weight: 500; border-radius: 12px; border: none; cursor: pointer; background-color: #2D2D2D; color: #FFFFFF; transition: background-color 0.2s ease; margin-top: 20px; }
         .submit-button:hover { background-color: #1a1a1a; }
         .submit-button:disabled { background-color: #ccc; cursor: not-allowed; }
         .get-token-section { text-align: center; }
@@ -66,7 +63,7 @@
                 <div class="upload-area">
                     <svg width="48" height="48" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M14 2H6C5.46957 2 4.96086 2.21071 4.58579 2.58579C4.21071 2.96086 4 3.46957 4 4V20C4 20.5304 4.21071 21.0391 4.58579 21.4142C4.96086 21.7893 5.46957 22 6 22H18C18.5304 22 19.0391 21.7893 19.4142 21.4142C19.7893 21.0391 20 20.5304 20 20V8L14 2Z" stroke="#D0D0D0" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M14 2V8H20" stroke="#D0D0D0" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M12 18V12" stroke="#D0D0D0" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M9 15L12 12L15 15" stroke="#D0D0D0" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
                     <p><span style="color: #000; font-weight: 500; text-decoration: underline;">Click to upload</span> or drag and drop</p>
-                    <p>Maximum file size 50 MB.</p>
+                    <p>Maximum 10 files, 50 MB total.</p>
                 </div>
             </label>
             
@@ -74,12 +71,7 @@
             <div class="file-list" id="fileList"></div>
 
             <div class="message-area message-info" id="initialMessage" style="display: block;">
-                This tool extracts stamp images, not complex brush textures.
-            </div>
-
-            <div class="option-checkbox">
-                <input type="checkbox" id="make_transparent" name="make_transparent" checked>
-                <label for="make_transparent">Make stamp backgrounds transparent (Recommended )</label>
+                This tool extracts stamp images (min 1024px ). It does not convert complex brush textures.
             </div>
 
             <p class="upload-requirement">Upload Requirement: Must be valid Procreate .brushset files.</p>
@@ -116,15 +108,11 @@
     </div>
 
     <script>
-        // --- MODAL JAVASCRIPT ---
         const modal = document.getElementById('policyModal');
         function openModal() { modal.style.display = "block"; }
         function closeModal() { modal.style.display = "none"; }
-        window.onclick = function(event) {
-            if (event.target == modal) { closeModal(); }
-        }
+        window.onclick = function(event) { if (event.target == modal) { closeModal(); } }
 
-        // --- FORM AND UPLOAD JAVASCRIPT ---
         const fileInput = document.getElementById('brush_files');
         const fileListDisplay = document.getElementById('fileList');
         const submitBtn = document.getElementById('submitBtn');
@@ -151,26 +139,26 @@
             selectedFiles.forEach(file => {
                 const item = document.createElement('div');
                 item.className = 'file-list-item';
-                item.innerHTML = `
-                    <span>${file.name}</span>
-                    <span class="status status-pending" id="status-${file.id}">Pending</span>
-                `;
+                item.innerHTML = `<span>${file.name}</span><span class="status status-pending" id="status-${file.id}">Pending</span>`;
                 fileListDisplay.appendChild(item);
             });
         }
 
         function handleFiles(files) {
+            let currentFiles = Array.from(files);
             selectedFiles = [];
             let totalSize = 0;
             let errors = [];
 
-            Array.from(files).forEach((file, index) => {
-                if (selectedFiles.length >= 10) {
-                    if (errors.indexOf('max_files') === -1) errors.push('max_files');
-                    return;
-                }
+            if (currentFiles.length > 10) {
+                errors.push('You can upload a maximum of 10 files.');
+            }
+
+            currentFiles.slice(0, 10).forEach((file, index) => {
                 if (!file.name.toLowerCase().endsWith('.brushset')) {
-                    if (errors.indexOf('file_type') === -1) errors.push('file_type');
+                    if (errors.indexOf('Please select only .brushset files.') === -1) {
+                        errors.push('Please select only .brushset files.');
+                    }
                     return;
                 }
                 totalSize += file.size;
@@ -179,15 +167,11 @@
             });
 
             if (totalSize > 50 * 1024 * 1024) {
-                errors.push('max_size');
+                errors.push('Total file size cannot exceed 50MB.');
             }
 
             if (errors.length > 0) {
-                let errorMsg = 'Error: ';
-                if (errors.includes('max_files')) errorMsg += 'You can upload a maximum of 10 files. ';
-                if (errors.includes('file_type')) errorMsg += 'Please select only .brushset files. ';
-                if (errors.includes('max_size')) errorMsg += 'Total file size cannot exceed 50MB.';
-                showMessage(errorMsg, true);
+                showMessage('Error: ' + errors.join(' '), true);
                 selectedFiles = [];
             }
             
@@ -196,14 +180,12 @@
         }
 
         fileInput.addEventListener('change', (e) => handleFiles(e.target.files));
-        
         uploadArea.addEventListener('dragover', (e) => { e.preventDefault(); uploadArea.style.borderColor = '#999'; });
         uploadArea.addEventListener('dragleave', (e) => { e.preventDefault(); uploadArea.style.borderColor = '#D0D0D0'; });
         uploadArea.addEventListener('drop', (e) => { e.preventDefault(); uploadArea.style.borderColor = '#D0D0D0'; handleFiles(e.dataTransfer.files); });
 
         uploadForm.addEventListener('submit', function(e) {
             e.preventDefault();
-
             const licenseKeyInput = document.getElementById('license_key');
             if (!licenseKeyInput.value.trim()) {
                 showMessage('Error: Please enter your License Key.', true);
@@ -236,19 +218,11 @@
                     formData.append('session_id', session_id);
                     formData.append('is_first_file', i === 0 ? 'true' : 'false');
                     formData.append('is_last_file', i === selectedFiles.length - 1 ? 'true' : 'false');
-                    formData.append('make_transparent', document.getElementById('make_transparent').checked);
-
+                    
                     try {
-                        const response = await fetch('/convert-single', {
-                            method: 'POST',
-                            body: formData,
-                        });
-
+                        const response = await fetch('/convert-single', { method: 'POST', body: formData });
                         const result = await response.json();
-
-                        if (!response.ok) {
-                            throw new Error(result.message || 'An unknown error occurred.');
-                        }
+                        if (!response.ok) { throw new Error(result.message || 'An unknown error occurred.'); }
 
                         statusElem.textContent = 'Completed';
                         statusElem.className = 'status status-completed';
@@ -262,7 +236,6 @@
                             a.click();
                             a.remove();
                         }
-
                     } catch (error) {
                         console.error('Conversion failed for file:', file.name, error);
                         statusElem.textContent = 'Failed';
@@ -283,6 +256,5 @@
             })();
         });
     </script>
-
 </body>
 </html>
