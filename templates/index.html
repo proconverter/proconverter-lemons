@@ -150,10 +150,13 @@
         }
 
         function handleFiles(files) {
+            // --- THIS IS THE FIX ---
+            // Reset the UI state every time new files are selected.
             resetMessages();
+            // ----------------------
 
             let currentFiles = Array.from(files);
-            let tempSelectedFiles = [];
+            selectedFiles = [];
             let totalSize = 0;
             let errors = [];
 
@@ -170,21 +173,17 @@
                 }
                 totalSize += file.size;
                 file.id = `file-${Date.now()}-${index}`;
-                tempSelectedFiles.push(file);
+                selectedFiles.push(file);
             });
 
             if (totalSize > 50 * 1024 * 1024) {
                 errors.push('Total file size cannot exceed 50MB.');
             }
 
-            // --- THIS IS THE FIX ---
             if (errors.length > 0) {
                 showMessage('Error: ' + errors.join(' '), true);
-                selectedFiles = []; // Clear the main selection
-            } else {
-                selectedFiles = tempSelectedFiles; // Only commit valid files to the main selection
+                selectedFiles = [];
             }
-            // ----------------------
             
             renderFileList();
             submitBtn.disabled = selectedFiles.length === 0;
@@ -244,7 +243,7 @@
                             a.href = result.download_url;
                             a.download = result.download_url.split('/').pop();
                             document.body.appendChild(a);
-                            a.click();
+a.click();
                             a.remove();
                         }
                     } catch (error) {
