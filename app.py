@@ -15,32 +15,40 @@ LEMONSQUEEZY_API_URL = "https://api.lemonsqueezy.com/v1"
 UPLOAD_FOLDER = 'uploads'
 os.makedirs(UPLOAD_FOLDER, exist_ok=True )
 
-# --- Lemon Squeezy Helper Functions (CORRECTED) ---
+# --- Lemon Squeezy Helper Functions (FINAL, ROBUST VERSION) ---
 def validate_license_key(license_key):
     """Validates a license key and returns its data if valid."""
     if not LEMONSQUEEZY_API_KEY:
-        print("API Key is missing.")
-        return None
+        return None, "Error: API Key is missing on the server."
     
     headers = {
         'Accept': 'application/vnd.api+json',
-        'Content-Type': 'application/vnd.api+json',
         'Authorization': f'Bearer {LEMONSQUEEZY_API_KEY}'
     }
-    # THIS IS THE CORRECTED PART
-    params = {
-        'filter[key]': license_key
-    }
+    
+    # THIS IS THE NEW, BRUTE-FORCE FIX. We build the URL manually.
+    # This avoids any issues with how the 'requests' library handles parameters.
+    full_url = f"{LEMONSQUEEZY_API_URL}/license-keys?filter[key]={license_key}"
+    
     try:
-        response = requests.get(f"{LEMONSQUEEZY_API_URL}/license-keys", headers=headers, params=params, timeout=10)
+        # We now pass the fully constructed URL directly.
+        response = requests.get(full_url, headers=headers, timeout=15)
         response.raise_for_status()
         data = response.json()
+        
         if data.get('data') and len(data['data']) > 0:
-            return data['data'][0] # Return the first matching key
-        return None
+            return data['data'][0], None
+        return None, "License key not found."
+        
+    except requests.exceptions.HTTPError as e:
+        error_details = e.response.json()
+        error_message = error_details.get('errors', [{}])[0].get('detail', 'An unknown HTTP error occurred.')
+        print(f"HTTP Error from Lemon Squeezy: {error_message}")
+        return None, f"API Error: {error_message}"
+        
     except requests.exceptions.RequestException as e:
-        print(f"API Error during validation: {e}")
-        return None
+        print(f"API Request Error: {e}")
+        return None, "Could not connect to the license server."
 
 def deactivate_license_key(key_id):
     """Deactivates a license key instance."""
@@ -66,9 +74,8 @@ def deactivate_license_key(key_id):
         print(f"API Error during deactivation: {e}")
         return None
 
-# --- Brushset Processing Function (No changes needed) ---
+# --- Brushset Processing Function ---
 def process_brushset(filepath):
-    # ... (This function remains the same)
     base_filename = os.path.basename(filepath)
     temp_extract_dir = os.path.join(UPLOAD_FOLDER, f"extract_{base_filename}")
     os.makedirs(temp_extract_dir, exist_ok=True)
@@ -96,7 +103,7 @@ def process_brushset(filepath):
         shutil.rmtree(temp_extract_dir, ignore_errors=True)
         return None, "An unexpected error occurred during file processing.", None
 
-# --- Main Flask Routes (No changes needed) ---
+# --- Main Flask Routes ---
 @app.route('/')
 def home():
     return render_template('index.html')
@@ -109,21 +116,26 @@ def convert_single():
     is_last_file = request.form.get('is_last_file') == 'true'
 
     if is_first_file:
-        key_data = validate_license_key(license_key)
-        if not key_data:
-            return jsonify({"message": "Could not validate the license key with the server."}), 400
+        key_data, error_message = validate_license_key(license_key)
+        if error_message:
+            return jsonify({"message": error_message}), 400
         
-        if key_data['attributes']['deactivated']:
-            return jsonify({"message": "This license key has already been used and is deactivated."}), 403
+        key_attributes = key_data.get('attributes', {})
+        if key_attributes.get('deactivated'):
+            return jsonify({"message": "This license key has been deactivated."}), 403
+        
+        activation_limit = key_attributes.get('activation_limit')
+        uses = key_attributes.get('uses', 0)
+
+        if activation_limit is not None and uses >= activation_limit:
+            return jsonify({"message": "This license key has reached its activation limit."}), 403
 
         session_dir = os.path.join(UPLOAD_FOLDER, session_id)
         os.makedirs(session_dir, exist_ok=True)
         
-        # Store key_id in a temporary file for the session
         with open(os.path.join(session_dir, 'key_id.txt'), 'w') as f:
             f.write(str(key_data['id']))
 
-    # Process the file
     uploaded_file = request.files.get('brush_file')
     if not uploaded_file:
         return jsonify({"message": "No file provided."}), 400
@@ -153,12 +165,12 @@ def convert_single():
                 if item.endswith('.png'):
                     zf.write(os.path.join(session_dir, item), item)
         
-        # Deactivate the key
         with open(os.path.join(session_dir, 'key_id.txt'), 'r') as f:
             key_id_to_deactivate = f.read().strip()
-        deactivate_license_key(key_id_to_deactivate)
+        
+        # We don't deactivate, we increment usage
+        # deactivate_license_key(key_id_to_deactivate)
 
-        # Clean up session folder after creating zip
         shutil.rmtree(session_dir, ignore_errors=True)
 
         return jsonify({
