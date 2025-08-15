@@ -15,7 +15,7 @@ LEMONSQUEEZY_API_URL = "https://api.lemonsqueezy.com/v1"
 UPLOAD_FOLDER = 'uploads'
 os.makedirs(UPLOAD_FOLDER, exist_ok=True )
 
-# --- Lemon Squeezy Helper Functions (LAST ATTEMPT) ---
+# --- Lemon Squeezy Helper Functions (MANUAL URL BUILD) ---
 def validate_license_key(license_key):
     if not LEMONSQUEEZY_API_KEY:
         return None, "Error: API Key is missing on the server."
@@ -24,14 +24,12 @@ def validate_license_key(license_key):
         'Accept': 'application/vnd.api+json',
         'Authorization': f'Bearer {LEMONSQUEEZY_API_KEY}'
     }
-    # The filter parameter must be passed in a specific way
-    params = {
-        'filter[key]': license_key,
-        'include': 'order' # Including the order can sometimes help
-    }
+    
+    # Build the URL manually to avoid parameter encoding issues
+    request_url = f"{LEMONSQUEEZY_API_URL}/license-keys?filter[key]={license_key}"
     
     try:
-        response = requests.get(f"{LEMONSQUEEZY_API_URL}/license-keys", headers=headers, params=params, timeout=15)
+        response = requests.get(request_url, headers=headers, timeout=15)
         response.raise_for_status()
         data = response.json()
         
@@ -40,8 +38,11 @@ def validate_license_key(license_key):
         return None, "License key not found in the database."
         
     except requests.exceptions.HTTPError as e:
-        error_details = e.response.json()
-        error_message = error_details.get('errors', [{}])[0].get('detail', 'An unknown API error occurred.')
+        try:
+            error_details = e.response.json()
+            error_message = error_details.get('errors', [{}])[0].get('detail', 'An unknown API error occurred.')
+        except:
+            error_message = f"HTTP {e.response.status_code} Error"
         print(f"HTTP Error from Lemon Squeezy: {error_message}")
         return None, f"API Error: {error_message}"
         
