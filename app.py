@@ -15,9 +15,9 @@ LEMONSQUEEZY_API_URL = "https://api.lemonsqueezy.com/v1"
 UPLOAD_FOLDER = 'uploads'
 os.makedirs(UPLOAD_FOLDER, exist_ok=True )
 
-# --- Lemon Squeezy Helper Functions (FINAL, ROBUST VERSION) ---
+# --- Lemon Squeezy Helper Functions (FINAL, CORRECTED VERSION) ---
 def validate_license_key(license_key):
-    """Validates a license key and returns its data if valid."""
+    """Validates a license key by attempting to retrieve it directly."""
     if not LEMONSQUEEZY_API_KEY:
         return None, "Error: API Key is missing on the server."
     
@@ -26,23 +26,24 @@ def validate_license_key(license_key):
         'Authorization': f'Bearer {LEMONSQUEEZY_API_KEY}'
     }
     
-    # THIS IS THE NEW, BRUTE-FORCE FIX. We build the URL manually.
-    # This avoids any issues with how the 'requests' library handles parameters.
-    full_url = f"{LEMONSQUEEZY_API_URL}/license-keys?filter[key]={license_key}"
+    # THIS IS THE FINAL, CORRECTED API ENDPOINT.
+    # We retrieve the key directly by its value, which is its ID.
+    full_url = f"{LEMONSQUEEZY_API_URL}/license-keys/{license_key}"
     
     try:
-        # We now pass the fully constructed URL directly.
         response = requests.get(full_url, headers=headers, timeout=15)
         response.raise_for_status()
         data = response.json()
         
-        if data.get('data') and len(data['data']) > 0:
-            return data['data'][0], None
-        return None, "License key not found."
+        if data.get('data'):
+            return data['data'], None
+        return None, "An unexpected error occurred while validating the key."
         
     except requests.exceptions.HTTPError as e:
+        if e.response.status_code == 404:
+            return None, "License key not found or is invalid."
         error_details = e.response.json()
-        error_message = error_details.get('errors', [{}])[0].get('detail', 'An unknown HTTP error occurred.')
+        error_message = error_details.get('errors', [{}])[0].get('detail', 'An unknown API error occurred.')
         print(f"HTTP Error from Lemon Squeezy: {error_message}")
         return None, f"API Error: {error_message}"
         
@@ -50,8 +51,8 @@ def validate_license_key(license_key):
         print(f"API Request Error: {e}")
         return None, "Could not connect to the license server."
 
-def deactivate_license_key(key_id):
-    """Deactivates a license key instance."""
+def increment_license_usage(key_id):
+    """Increments the usage count of a license key."""
     headers = {
         'Accept': 'application/vnd.api+json',
         'Content-Type': 'application/vnd.api+json',
@@ -62,7 +63,7 @@ def deactivate_license_key(key_id):
             'type': 'license-keys',
             'id': str(key_id),
             'attributes': {
-                'deactivated': True
+                'increment': 1 # This tells the API to add 1 to the usage count
             }
         }
     }
@@ -71,7 +72,7 @@ def deactivate_license_key(key_id):
         response.raise_for_status()
         return response.json()
     except requests.exceptions.RequestException as e:
-        print(f"API Error during deactivation: {e}")
+        print(f"API Error during usage increment: {e}")
         return None
 
 # --- Brushset Processing Function ---
@@ -121,8 +122,8 @@ def convert_single():
             return jsonify({"message": error_message}), 400
         
         key_attributes = key_data.get('attributes', {})
-        if key_attributes.get('deactivated'):
-            return jsonify({"message": "This license key has been deactivated."}), 403
+        if key_attributes.get('status') == 'inactive':
+            return jsonify({"message": "This license key is inactive."}), 403
         
         activation_limit = key_attributes.get('activation_limit')
         uses = key_attributes.get('uses', 0)
@@ -166,10 +167,9 @@ def convert_single():
                     zf.write(os.path.join(session_dir, item), item)
         
         with open(os.path.join(session_dir, 'key_id.txt'), 'r') as f:
-            key_id_to_deactivate = f.read().strip()
+            key_id_to_increment = f.read().strip()
         
-        # We don't deactivate, we increment usage
-        # deactivate_license_key(key_id_to_deactivate)
+        increment_license_usage(key_id_to_increment)
 
         shutil.rmtree(session_dir, ignore_errors=True)
 
