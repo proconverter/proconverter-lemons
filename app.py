@@ -15,9 +15,8 @@ LEMONSQUEEZY_API_URL = "https://api.lemonsqueezy.com/v1"
 UPLOAD_FOLDER = 'uploads'
 os.makedirs(UPLOAD_FOLDER, exist_ok=True )
 
-# --- Lemon Squeezy Helper Functions (FINAL, CORRECTED VERSION) ---
+# --- Lemon Squeezy Helper Functions (LAST ATTEMPT) ---
 def validate_license_key(license_key):
-    """Validates a license key by attempting to retrieve it directly."""
     if not LEMONSQUEEZY_API_KEY:
         return None, "Error: API Key is missing on the server."
     
@@ -25,23 +24,22 @@ def validate_license_key(license_key):
         'Accept': 'application/vnd.api+json',
         'Authorization': f'Bearer {LEMONSQUEEZY_API_KEY}'
     }
-    
-    # THIS IS THE FINAL, CORRECTED API ENDPOINT.
-    # We retrieve the key directly by its value, which is its ID.
-    full_url = f"{LEMONSQUEEZY_API_URL}/license-keys/{license_key}"
+    # The filter parameter must be passed in a specific way
+    params = {
+        'filter[key]': license_key,
+        'include': 'order' # Including the order can sometimes help
+    }
     
     try:
-        response = requests.get(full_url, headers=headers, timeout=15)
+        response = requests.get(f"{LEMONSQUEEZY_API_URL}/license-keys", headers=headers, params=params, timeout=15)
         response.raise_for_status()
         data = response.json()
         
-        if data.get('data'):
-            return data['data'], None
-        return None, "An unexpected error occurred while validating the key."
+        if data.get('data') and len(data['data']) > 0:
+            return data['data'][0], None
+        return None, "License key not found in the database."
         
     except requests.exceptions.HTTPError as e:
-        if e.response.status_code == 404:
-            return None, "License key not found or is invalid."
         error_details = e.response.json()
         error_message = error_details.get('errors', [{}])[0].get('detail', 'An unknown API error occurred.')
         print(f"HTTP Error from Lemon Squeezy: {error_message}")
@@ -52,7 +50,6 @@ def validate_license_key(license_key):
         return None, "Could not connect to the license server."
 
 def increment_license_usage(key_id):
-    """Increments the usage count of a license key."""
     headers = {
         'Accept': 'application/vnd.api+json',
         'Content-Type': 'application/vnd.api+json',
@@ -63,7 +60,7 @@ def increment_license_usage(key_id):
             'type': 'license-keys',
             'id': str(key_id),
             'attributes': {
-                'increment': 1 # This tells the API to add 1 to the usage count
+                'increment': 1
             }
         }
     }
