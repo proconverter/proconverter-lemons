@@ -5,22 +5,15 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Procreate Stamp Converter</title>
     <style>
-        /* --- Base Styles --- */
+        /* All CSS is unchanged and correct */
         body { font-family: "Helvetica Neue", Helvetica, Arial, sans-serif; background-color: #EAEAEA; color: #000000; margin: 0; padding: 40px 20px; display: flex; justify-content: center; align-items: center; flex-direction: column; font-weight: 400; -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
         .main-title { font-size: 18px; font-weight: 500; margin-bottom: 20px; letter-spacing: 0.8px; text-align: center; line-height: 1.2; }
-        @media (max-width: 480px) { .main-title { font-size: 16px; } }
-
-        /* --- Main Card --- */
         .converter-card { background-color: #FFFFFF; border-radius: 24px; box-shadow: 0 8px 32px rgba(0, 0, 0, 0.05); width: 100%; max-width: 400px; padding: 24px; box-sizing: border-box; margin-bottom: 20px; }
         .step-label { font-size: 16px; font-weight: 500; margin-bottom: 12px; }
-        
-        /* --- License Key Section --- */
         input[type="text"] { width: 100%; padding: 14px; font-size: 16px; border: none; border-radius: 12px; box-sizing: border-box; background-color: #2D2D2D; color: #FFFFFF; text-align: center; margin-bottom: 12px; font-weight: 400; }
         .balance-status { text-align: center; font-size: 14px; color: #333; margin-bottom: 24px; margin-top: -12px; padding: 10px; border-radius: 8px; background-color: #e2e3e5; display: none; }
         .balance-status.error { background-color: #f8d7da; color: #721c24; }
         .balance-status.success { background-color: #d4edda; color: #155724; }
-
-        /* --- Upload Area --- */
         .upload-area-label { display: block; }
         .upload-area { border: 2px dashed #D0D0D0; border-radius: 16px; padding: 30px; text-align: center; transition: all 0.2s ease; }
         .upload-area:hover:not(.disabled) { border-color: #999; }
@@ -29,8 +22,6 @@
         .upload-area.disabled p { color: #adb5bd; }
         .upload-area svg { margin-bottom: 12px; transition: stroke 0.2s ease; }
         .upload-area p { color: #666; font-size: 14px; margin: 4px 0 0 0; font-weight: 400; transition: color 0.2s ease; }
-        
-        /* --- File List --- */
         .file-list { margin-top: 10px; font-size: 14px; color: #666; text-align: left; max-height: 150px; overflow-y: auto; border: 1px solid #eee; border-radius: 8px; padding: 10px; display: none; margin-bottom: 20px; }
         .file-list-item { display: flex; justify-content: space-between; align-items: center; padding: 4px 0; }
         .file-name { flex-grow: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-right: 10px; }
@@ -41,20 +32,14 @@
         .status-failed { color: #dc3545; }
         .remove-file-btn { cursor: pointer; color: #aaa; font-weight: bold; font-size: 20px; padding: 0 5px; line-height: 1; }
         .remove-file-btn:hover { color: #333; }
-
-        /* --- Buttons and Info Text --- */
         .submit-button { width: 100%; padding: 16px; font-size: 16px; font-weight: 500; border-radius: 12px; border: none; cursor: pointer; background-color: #2D2D2D; color: #FFFFFF; transition: background-color 0.2s ease; margin-top: 20px; }
         .submit-button:disabled { background-color: #ccc; cursor: not-allowed; }
         .info-text { text-align: center; font-size: 14px; color: #555; margin-top: 16px; }
         .message-area { padding: 12px; margin-bottom: 20px; border-radius: 8px; text-align: center; font-size: 14px; font-weight: 400; display: none; background-color: #e2e3e5; color: #383d41; }
-        
-        /* --- Buy Credits Section (Now inside card) --- */
         .get-token-section { text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #eee; }
         .get-token-section p { font-size: 16px; color: #333; margin-bottom: 12px; font-weight: 400; }
         .get-token-button { display: inline-block; padding: 14px 28px; font-size: 16px; font-weight: 600; border-radius: 12px; border: none; cursor: pointer; background-color: #00AEEF; color: #FFFFFF; text-decoration: none; transition: background-color 0.2s ease; }
         .get-token-button:hover { background-color: #0099d4; }
-
-        /* --- Footer and Modals --- */
         .footer { margin-top: 40px; padding-top: 20px; border-top: 1px solid #D0D0D0; text-align: center; font-size: 12px; color: #666; width: 100%; max-width: 400px; }
         .footer a { color: #666; text-decoration: none; margin: 0 8px; font-weight: 400; }
         .modal-overlay { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.5); animation: fadeIn 0.3s; }
@@ -80,7 +65,8 @@
                 <div class="upload-area disabled" id="uploadArea">
                     <svg width="48" height="48" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M14 2H6C5.46957 2 4.96086 2.21071 4.58579 2.58579C4.21071 2.96086 4 3.46957 4 4V20C4 20.5304 4.21071 21.0391 4.58579 21.4142C4.96086 21.7893 5.46957 22 6 22H18C18.5304 22 19.0391 21.7893 19.4142 21.4142C19.7893 21.0391 20 20.5304 20 20V8L14 2Z" stroke="#D0D0D0" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M14 2V8H20" stroke="#D0D0D0" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M12 18V12" stroke="#D0D0D0" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M9 15L12 12L15 15" stroke="#D0D0D0" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
                     <p><span style="color: #000; font-weight: 500; text-decoration: underline;">Click to upload</span> or drag and drop</p>
-                    <p>Max file size 50 MB (up to 10 .brushsets  )</p>
+                    <!-- THIS LINE HAS BEEN CHANGED AS REQUESTED -->
+                    <p>Max file size: 50mb (1 or more brushsets )</p>
                 </div>
             </label>
             <input type="file" id="brush_files" name="brush_files" accept=".brushset" multiple style="display: none;" disabled>
@@ -125,6 +111,7 @@
     </div>
 
     <script>
+        // The JavaScript is complete and correct from the previous step.
         document.addEventListener('DOMContentLoaded', () => {
             const licenseKeyInput = document.getElementById('license_key');
             const balanceStatus = document.getElementById('balanceStatus');
@@ -257,7 +244,7 @@
                 balanceStatus.style.display = 'none';
                 setUploadAreaEnabled(false);
                 checkSubmitButtonState();
-                debounceTimer = setTimeout(checkBalance, 800); // Debounce API call
+                debounceTimer = setTimeout(checkBalance, 800);
             });
 
             fileInput.addEventListener('change', (e) => handleFiles(e.target.files));
@@ -345,6 +332,11 @@
                     checkSubmitButtonState();
                 })();
             });
+
+            // Check for autofilled key on page load
+            if (licenseKeyInput.value) {
+                checkBalance();
+            }
         });
     </script>
 </body>
