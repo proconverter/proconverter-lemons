@@ -52,7 +52,6 @@
     <div class="converter-card">
         <form method="post" enctype="multipart/form-data" id="uploadForm" novalidate>
             <p class="step-label">Step 1: Enter Your License Key</p>
-            <!-- The 'required' attribute has been removed from this input -->
             <input type="text" id="license_key" name="license_key" placeholder="Enter your license key here">
             <div class="balance-status" id="balanceStatus"></div>
 
@@ -84,13 +83,11 @@
         <p><a href="javascript:void(0 );" onclick="openModal('policyModal')">Terms & Privacy</a></p>
     </footer>
 
-    <!-- Modals will be here -->
     <div id="policyModal" class="modal-overlay">...</div>
     <div id="errorModal" class="modal-overlay">...</div>
 
-    <!-- The entire JavaScript block is unchanged from the last version -->
     <script>
-        // --- MODAL JAVASCRIPT (Unchanged) ---
+        // --- MODAL JAVASCRIPT ---
         function openModal(modalId) { document.getElementById(modalId).style.display = "block"; }
         function closeModal(modalId) { document.getElementById(modalId).style.display = "none"; }
         window.onclick = function(event) { if (event.target.classList.contains('modal-overlay')) { event.target.style.display = "none"; } }
@@ -106,44 +103,65 @@
         const messageArea = document.querySelector('.message-area');
         const initialMessage = document.getElementById('initialMessage');
         const errorModalText = document.getElementById('errorModalText');
+        
         let selectedFiles = [];
+        let isLicenseValid = false;
 
         // --- Helper Functions ---
         function showError(text) { errorModalText.textContent = text; openModal('errorModal'); }
         function showInfo(text) { initialMessage.style.display = 'none'; messageArea.textContent = text; messageArea.className = 'message-area message-info'; messageArea.style.display = 'block'; }
         function resetMessages() { messageArea.style.display = 'none'; initialMessage.style.display = 'block'; }
 
-        // --- AUTOMATIC BALANCE CHECK LOGIC ---
+        function checkSubmitButtonState() {
+            submitBtn.disabled = !(isLicenseValid && selectedFiles.length > 0);
+        }
+
+        // --- BALANCE CHECK LOGIC ---
         const checkBalance = async () => {
             const licenseKey = licenseKeyInput.value.trim();
-            if (licenseKey.length < 10) {
+            isLicenseValid = false; // Reset on every check
+            
+            if (licenseKey.length < 8) { // Basic check for minimum length
                 balanceStatus.style.display = 'none';
+                checkSubmitButtonState();
                 return;
             }
+
             balanceStatus.textContent = 'Validating key...';
             balanceStatus.className = 'balance-status';
             balanceStatus.style.display = 'block';
+            
             const formData = new FormData();
             formData.append('license_key', licenseKey);
+            
             try {
                 const response = await fetch('/check-license', { method: 'POST', body: formData });
                 const result = await response.json();
                 if (!response.ok) { throw new Error(result.message || 'An unknown error occurred.'); }
+                
                 balanceStatus.innerHTML = `Valid Key! Remaining Conversions: <strong>${result.remaining}</strong>`;
                 balanceStatus.className = 'balance-status success';
+                isLicenseValid = true;
             } catch (error) {
                 balanceStatus.textContent = `${error.message}`;
                 balanceStatus.className = 'balance-status error';
+                isLicenseValid = false;
             }
+            checkSubmitButtonState();
         };
         licenseKeyInput.addEventListener('blur', checkBalance);
+        licenseKeyInput.addEventListener('input', () => { // Reset if user is typing
+            isLicenseValid = false;
+            balanceStatus.style.display = 'none';
+            checkSubmitButtonState();
+        });
 
         // --- FILE HANDLING LOGIC ---
         function renderFileList() {
             fileListDisplay.innerHTML = '';
             if (selectedFiles.length === 0) {
                 fileListDisplay.style.display = 'none';
-                submitBtn.disabled = true;
+                checkSubmitButtonState();
                 return;
             }
             fileListDisplay.style.display = 'block';
@@ -163,46 +181,23 @@
                     removeFile(indexToRemove);
                 });
             });
-            submitBtn.disabled = false;
+            checkSubmitButtonState();
         }
-
-        function removeFile(index) {
-            selectedFiles.splice(index, 1);
-            renderFileList();
-        }
-
+        function removeFile(index) { selectedFiles.splice(index, 1); renderFileList(); }
         function handleFiles(files) {
             let currentFiles = Array.from(files);
             let errors = [];
             currentFiles.forEach(file => {
-                if (selectedFiles.length >= 10) {
-                    if (!errors.includes('You can upload a maximum of 10 files in total.')) {
-                        errors.push('You can upload a maximum of 10 files in total.');
-                    }
-                    return;
-                }
-                if (selectedFiles.some(f => f.name === file.name && f.size === file.size)) {
-                    return; 
-                }
-                if (!file.name.toLowerCase().endsWith('.brushset')) {
-                    if (!errors.includes('Please select only .brushset files.')) {
-                        errors.push('Please select only .brushset files.');
-                    }
-                    return;
-                }
+                if (selectedFiles.length >= 10) { if (!errors.includes('You can upload a maximum of 10 files.')) { errors.push('You can upload a maximum of 10 files.'); } return; }
+                if (selectedFiles.some(f => f.name === file.name && f.size === file.size)) { return; }
+                if (!file.name.toLowerCase().endsWith('.brushset')) { if (!errors.includes('Please select only .brushset files.')) { errors.push('Please select only .brushset files.'); } return; }
                 selectedFiles.push(file);
             });
             const totalSize = selectedFiles.reduce((acc, file) => acc + file.size, 0);
-            if (totalSize > 50 * 1024 * 1024) {
-                errors.push('Total file size cannot exceed 50MB.');
-                selectedFiles.splice(selectedFiles.length - currentFiles.length);
-            }
-            if (errors.length > 0) {
-                showError(errors.join(' '));
-            }
+            if (totalSize > 50 * 1024 * 1024) { errors.push('Total file size cannot exceed 50MB.'); selectedFiles.splice(selectedFiles.length - currentFiles.length); }
+            if (errors.length > 0) { showError(errors.join(' ')); }
             renderFileList();
         }
-
         fileInput.addEventListener('change', (e) => handleFiles(e.target.files));
         uploadArea.addEventListener('dragover', (e) => { e.preventDefault(); uploadArea.style.borderColor = '#999'; });
         uploadArea.addEventListener('dragleave', (e) => { e.preventDefault(); uploadArea.style.borderColor = '#D0D0D0'; });
@@ -211,34 +206,42 @@
         // --- FORM SUBMISSION LOGIC ---
         uploadForm.addEventListener('submit', function(e) {
             e.preventDefault();
-            // Our JS check for the license key is still here, so functionality is the same
-            if (!licenseKeyInput.value.trim()) { showError('Please enter your License Key.'); return; }
-            if (selectedFiles.length === 0) { showError('Please select at least one .brushset file.'); return; }
+            if (submitBtn.disabled) { return; } // Extra safety check
+
             submitBtn.textContent = 'Converting...';
             submitBtn.disabled = true;
-            showInfo('Starting conversion process... Your download will begin when complete.');
+            showInfo('Starting conversion process...');
+            
             const session_id = `session-${Date.now()}`;
             let hasFailed = false;
+
             (async () => {
                 for (let i = 0; i < selectedFiles.length; i++) {
                     const file = selectedFiles[i];
                     if (hasFailed) break;
+                    
                     const statusElem = document.getElementById(`status-${i}`);
-                    document.querySelector(`.remove-file-btn[data-index="${i}"]`).style.display = 'none';
+                    const removeBtn = document.querySelector(`.remove-file-btn[data-index="${i}"]`);
+                    if(removeBtn) removeBtn.style.display = 'none';
+                    
                     statusElem.textContent = 'Processing...';
                     statusElem.className = 'status status-processing';
+                    
                     const formData = new FormData();
                     formData.append('license_key', licenseKeyInput.value.trim());
                     formData.append('brush_file', file);
                     formData.append('session_id', session_id);
                     formData.append('is_first_file', i === 0);
                     formData.append('is_last_file', i === selectedFiles.length - 1);
+                    
                     try {
                         const response = await fetch('/convert-single', { method: 'POST', body: formData });
                         const result = await response.json();
                         if (!response.ok) { throw new Error(result.message || `Server returned status ${response.status}`); }
+                        
                         statusElem.textContent = 'Completed';
                         statusElem.className = 'status status-completed';
+                        
                         if (result.download_url) {
                             showInfo('All files processed! Your download will begin shortly.');
                             const a = document.createElement('a');
@@ -247,7 +250,11 @@
                             document.body.appendChild(a);
                             a.click();
                             a.remove();
-                            checkBalance(); 
+                            
+                            if (typeof result.remaining !== 'undefined' && result.remaining >= 0) {
+                                balanceStatus.innerHTML = `Valid Key! Remaining Conversions: <strong>${result.remaining}</strong>`;
+                                isLicenseValid = result.remaining > 0;
+                            }
                         }
                     } catch (error) {
                         statusElem.textContent = 'Failed';
@@ -256,19 +263,5 @@
                         hasFailed = true;
                     }
                 }
-                submitBtn.textContent = 'Convert Your Brushsets';
-                submitBtn.disabled = false;
-                if (!hasFailed) {
-                    setTimeout(() => {
-                        resetMessages();
-                        selectedFiles = [];
-                        renderFileList();
-                    }, 5000);
-                } else {
-                    renderFileList();
-                }
-            })();
-        });
-    </script>
-</body>
-</html>
+
+                // --- ROBUST UI
