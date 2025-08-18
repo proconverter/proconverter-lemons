@@ -50,10 +50,10 @@
     <h1 class="main-title">PROCREATE STAMP TO PNG CONVERTER</h1>
 
     <div class="converter-card">
-        <!-- THE ONLY CHANGE IS HERE: added novalidate -->
         <form method="post" enctype="multipart/form-data" id="uploadForm" novalidate>
             <p class="step-label">Step 1: Enter Your License Key</p>
-            <input type="text" id="license_key" name="license_key" placeholder="Enter your license key here" required>
+            <!-- The 'required' attribute has been removed from this input -->
+            <input type="text" id="license_key" name="license_key" placeholder="Enter your license key here">
             <div class="balance-status" id="balanceStatus"></div>
 
             <p class="step-label">Step 2: Upload Your .brushset Files</p>
@@ -64,7 +64,7 @@
                     <p>Max file size 50 MB (up to 10 .brushsets  )</p>
                 </div>
             </label>
-            <input type="file" id="brush_files" name="brush_files" accept=".brushset" required multiple style="display: none;">
+            <input type="file" id="brush_files" name="brush_files" accept=".brushset" multiple style="display: none;">
             <div class="file-list" id="fileList"></div>
             <div class="message-area message-info" id="initialMessage" style="display: block;">
                 This tool extracts stamp images (min 1024px). It does not convert complex brush textures.
@@ -211,6 +211,7 @@
         // --- FORM SUBMISSION LOGIC ---
         uploadForm.addEventListener('submit', function(e) {
             e.preventDefault();
+            // Our JS check for the license key is still here, so functionality is the same
             if (!licenseKeyInput.value.trim()) { showError('Please enter your License Key.'); return; }
             if (selectedFiles.length === 0) { showError('Please select at least one .brushset file.'); return; }
             submitBtn.textContent = 'Converting...';
