@@ -66,7 +66,7 @@
                     <svg width="48" height="48" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M14 2H6C5.46957 2 4.96086 2.21071 4.58579 2.58579C4.21071 2.96086 4 3.46957 4 4V20C4 20.5304 4.21071 21.0391 4.58579 21.4142C4.96086 21.7893 5.46957 22 6 22H18C18.5304 22 19.0391 21.7893 19.4142 21.4142C19.7893 21.0391 20 20.5304 20 20V8L14 2Z" stroke="#D0D0D0" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M14 2V8H20" stroke="#D0D0D0" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M12 18V12" stroke="#D0D0D0" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M9 15L12 12L15 15" stroke="#D0D0D0" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
                     <p><span style="color: #000; font-weight: 500; text-decoration: underline;">Click to upload</span> or drag and drop</p>
                     <!-- THIS LINE HAS BEEN CHANGED AS REQUESTED -->
-                    <p>Max file size: 50mb (1 or more brushsets )</p>
+                    <p>1 or more .brushset files / 50MB total per session</p>
                 </div>
             </label>
             <input type="file" id="brush_files" name="brush_files" accept=".brushset" multiple style="display: none;" disabled>
@@ -75,7 +75,7 @@
 
             <!-- Convert Button and Info Text -->
             <button type="submit" class="submit-button" id="submitBtn" disabled>Convert Your Brushsets</button>
-            <p class="info-text">This tool extracts stamp images (min 1024px). It does not convert complex brush textures.</p>
+            <p class="info-text">This tool extracts stamp images (min 1024px ). It does not convert complex brush textures.</p>
 
             <!-- Buy Credits Section (Now inside the card) -->
             <div class="get-token-section">
@@ -127,6 +127,7 @@
             let selectedFiles = [];
             let isLicenseValid = false;
             let debounceTimer;
+            let currentBalance = 0;
 
             window.openModal = (modalId) => document.getElementById(modalId).style.display = "block";
             window.closeModal = (modalId) => document.getElementById(modalId).style.display = "none";
@@ -179,9 +180,10 @@
                     const result = await response.json();
                     if (!response.ok) throw new Error(result.message);
                     
-                    balanceStatus.innerHTML = `Valid Key! Remaining Conversions: <strong>${result.remaining}</strong>`;
+                    currentBalance = result.remaining;
+                    balanceStatus.innerHTML = `Valid Key! Remaining Conversions: <strong>${currentBalance}</strong>`;
                     balanceStatus.className = 'balance-status success';
-                    isLicenseValid = result.remaining > 0;
+                    isLicenseValid = currentBalance > 0;
                     setUploadAreaEnabled(isLicenseValid);
                     if (!isLicenseValid) {
                         balanceStatus.textContent = 'This key is valid, but has no conversions left.';
@@ -300,13 +302,17 @@
                                 a.click();
                                 a.remove();
                                 
-                                if (typeof result.remaining !== 'undefined' && result.remaining >= 0) {
-                                    balanceStatus.innerHTML = `Valid Key! Remaining Conversions: <strong>${result.remaining}</strong>`;
-                                    isLicenseValid = result.remaining > 0;
-                                    if (!isLicenseValid) {
-                                        balanceStatus.textContent = 'This key is valid, but has no conversions left.';
-                                        balanceStatus.className = 'balance-status error';
-                                    }
+                                if (result.remaining === -1) {
+                                    currentBalance -= 1;
+                                } else if (typeof result.remaining !== 'undefined' && result.remaining >= 0) {
+                                    currentBalance = result.remaining;
+                                }
+                                
+                                balanceStatus.innerHTML = `Valid Key! Remaining Conversions: <strong>${currentBalance}</strong>`;
+                                isLicenseValid = currentBalance > 0;
+                                if (!isLicenseValid) {
+                                    balanceStatus.textContent = 'This key is valid, but has no conversions left.';
+                                    balanceStatus.className = 'balance-status error';
                                 }
                             }
                         } catch (error) {
