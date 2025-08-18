@@ -20,7 +20,6 @@ def validate_license_key(license_key):
     if not license_key:
         return None, "License key was not provided."
     try:
-        # Use the /validate endpoint
         response = requests.post(f"{LICENSE_API_URL}/validate", data={'license_key': license_key}, timeout=15)
         data = response.json()
         if response.status_code == 200 and data.get('valid'):
@@ -38,7 +37,6 @@ def increment_license_usage(license_key):
         print("API Key is missing, cannot increment usage.")
         return None
     try:
-        # Use the /increment endpoint
         response = requests.post(f"{LICENSE_API_URL}/increment", headers={'Authorization': f'Bearer {LEMONSQUEEZY_API_KEY}'}, data={'license_key': license_key}, timeout=10)
         response.raise_for_status()
         return response.json()
@@ -46,7 +44,7 @@ def increment_license_usage(license_key):
         print(f"API Error during usage increment: {e}")
         return None
 
-# --- THIS IS THE MISSING ROUTE ---
+# --- Route for checking license balance ---
 @app.route('/check-license', methods=['POST'])
 def check_license():
     license_key = request.form.get('license_key')
@@ -58,10 +56,9 @@ def check_license():
     if error_message:
         return jsonify({"message": f"License Error: {error_message}"}), 400
 
-    # Extract usage details from the 'meta' object in the response
     meta = key_data.get('meta', {})
     uses = meta.get('uses', 0)
-    activation_limit = meta.get('activation_limit', 10) # Default to 10 if not set
+    activation_limit = meta.get('activation_limit', 10)
     remaining = activation_limit - uses
 
     return jsonify({
@@ -71,7 +68,7 @@ def check_license():
         "remaining": remaining
     })
 
-# --- Brushset Processing Function (Unchanged) ---
+# --- Brushset Processing Function ---
 def process_brushset(filepath):
     base_filename = os.path.basename(filepath)
     temp_extract_dir = os.path.join(UPLOAD_FOLDER, f"extract_{uuid.uuid4().hex}")
@@ -152,7 +149,8 @@ def convert_single():
 
     if is_last_file:
         final_zip_filename = f"converted_{secure_filename(session_id)}.zip"
-        final_zip_path = os.path.join(UPLOAD_OADER, final_zip_filename)
+        # THIS IS THE CORRECTED LINE
+        final_zip_path = os.path.join(UPLOAD_FOLDER, final_zip_filename)
         
         with zipfile.ZipFile(final_zip_path, 'w') as zf:
             for item in os.listdir(session_dir):
@@ -161,7 +159,7 @@ def convert_single():
         
         key_path = os.path.join(session_dir, 'key.txt')
         if os.path.exists(key_path):
-            with open(key_path, 'r') as f:
+            with open(key_path, 'r') as f:.
                 key_to_increment = f.read().strip()
             increment_license_usage(key_to_increment)
 
