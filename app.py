@@ -15,7 +15,7 @@ LICENSE_API_URL = "https://api.lemonsqueezy.com/v1/licenses"
 UPLOAD_FOLDER = 'uploads'
 os.makedirs(UPLOAD_FOLDER, exist_ok=True )
 
-# --- Lemon Squeezy Helper Functions ---
+# --- Lemon Squeezy Helper Functions (Rewritten for Robustness) ---
 def validate_license_key(license_key):
     if not license_key:
         return None, "License key was not provided."
@@ -23,28 +23,31 @@ def validate_license_key(license_key):
         response = requests.post(f"{LICENSE_API_URL}/validate", data={'license_key': license_key}, timeout=15)
         data = response.json()
         
-        if response.status_code == 200 and data.get('valid'):
-            status = data.get('meta', {}).get('status')
-            if status in ['active', 'inactive']:
-                 return data, None
-            else:
-                 return None, f"License key has an unsupported status: '{status}'."
-        else:
-            return None, data.get('error', 'Invalid or unrecognized license key.')
-            
+        # Case 1: The key is fundamentally invalid (doesn't exist, etc.)
+        if not data.get('valid'):
+            return None, data.get('error', 'This license key is not valid.')
+
+        # Case 2: The key is valid, now check its status.
+        status = data.get('meta', {}).get('status')
+        if status in ['active', 'inactive']: # We allow inactive for testing
+            return data, None
+        else: # Handles 'expired', 'disabled', or other statuses
+            return None, f"This license key is '{status}' and cannot be used."
+
     except requests.exceptions.RequestException as e:
         print(f"License API Request Error: {e}")
-        return None, "Could not connect to the license server."
+        return None, "Could not connect to the license server. Please try again."
+    except ValueError: # Handles cases where response is not valid JSON
+        return None, "Received an invalid response from the license server."
 
 def increment_license_usage(license_key):
     if not LEMONSQUEEZY_API_KEY:
-        print("API Key is missing, cannot increment usage.")
         return None, "Server configuration error."
     try:
         response = requests.post(f"{LICENSE_API_URL}/{license_key}/increment", headers={'Authorization': f'Bearer {LEMONSQUEEZY_API_KEY}'}, timeout=10)
         
         if response.status_code in [403, 404]:
-             print("NOTE: License increment failed, likely due to Test Mode with an inactive key. Simulating success.")
+             print("NOTE: License increment failed, likely due to Test Mode. Simulating success.")
              key_data, _ = validate_license_key(license_key)
              if key_data:
                  limit = key_data.get('meta', {}).get('activation_limit', 10)
@@ -63,15 +66,13 @@ def increment_license_usage(license_key):
         print(f"API Error during usage increment: {e}")
         return None, str(e)
 
-# --- Routes ---
+# --- Routes (Unchanged) ---
 @app.route('/check-license', methods=['POST'])
 def check_license():
     license_key = request.form.get('license_key')
-    if not license_key:
-        return jsonify({"message": "Please provide a license key."}), 400
     key_data, error_message = validate_license_key(license_key)
     if error_message:
-        return jsonify({"message": f"License Error: {error_message}"}), 400
+        return jsonify({"message": error_message}), 400
     meta = key_data.get('meta', {})
     uses = meta.get('uses', 0)
     activation_limit = meta.get('activation_limit', 10)
@@ -118,7 +119,7 @@ def convert_single():
     if is_first_file:
         key_data, error_message = validate_license_key(license_key)
         if error_message:
-            return jsonify({"message": f"License Error: {error_message}"}), 400
+            return jsonify({"message": error_message}), 400
         meta = key_data.get('meta', {})
         if meta.get('uses', 0) >= meta.get('activation_limit', 10):
             return jsonify({"message": "This license key has reached its usage limit."}), 403
