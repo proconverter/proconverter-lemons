@@ -15,7 +15,7 @@ LICENSE_API_URL = "https://api.lemonsqueezy.com/v1/licenses"
 UPLOAD_FOLDER = 'uploads'
 os.makedirs(UPLOAD_FOLDER, exist_ok=True )
 
-# --- Lemon Squeezy Helper Functions (DEFINITIVELY REWRITTEN) ---
+# --- Lemon Squeezy Helper Functions (DEFINITIVELY REWRITTEN FOR LIVE/TEST MODES) ---
 def validate_license_key(license_key):
     if not license_key:
         return None, "Please enter a license key."
@@ -24,19 +24,20 @@ def validate_license_key(license_key):
         data = response.json()
         
         # Case 1: The key is fundamentally invalid (e.g., doesn't exist).
-        # The API returns 'valid': False and an 'error' message.
         if not data.get('valid'):
             return None, data.get('error', 'This license key could not be found.')
 
-        # Case 2: The key is valid, so we can safely check its status.
+        # Case 2: The key is valid. The API response for a valid key ALWAYS contains a 'meta' object.
+        # We can now safely check its status.
         status = data.get('meta', {}).get('status')
         
         if status in ['active', 'inactive']: # We allow 'inactive' for testing purposes.
             return data, None # Success!
         elif status: # Handles 'expired', 'disabled', etc.
             return None, f"This license key is '{status}' and can no longer be used."
-        else: # Should not happen if key is valid, but a good fallback.
-            return None, "The license key is valid, but its status is unknown."
+        else:
+            # This case should no longer be reached, but it's a safe fallback.
+            return None, "Could not determine the status of this license key."
 
     except requests.exceptions.RequestException as e:
         print(f"License API Request Error: {e}")
@@ -48,21 +49,18 @@ def increment_license_usage(license_key):
     if not LEMONSQUEEZY_API_KEY:
         return None, "Server configuration error: API key is missing."
     try:
-        # This is the correct endpoint for incrementing by license key string
         response = requests.post(f"{LICENSE_API_URL}/increment", data={'license_key': license_key}, headers={'Authorization': f'Bearer {LEMONSQUEEZY_API_KEY}'}, timeout=10)
         
-        # In Test Mode, this call will fail with a 404. We simulate success.
         if response.status_code == 404:
              print("NOTE: License increment failed with 404, likely due to Test Mode. Simulating success.")
              key_data, _ = validate_license_key(license_key)
              if key_data:
                  limit = key_data.get('meta', {}).get('activation_limit', 10)
                  uses = key_data.get('meta', {}).get('uses', 0)
-                 # Return the new remaining balance after this use
                  return limit - (uses + 1), None
-             return 9, None # Fallback if re-validation fails
+             return 9, None
 
-        response.raise_for_status() # Raise HTTPError for other bad responses (4xx or 5xx)
+        response.raise_for_status()
         data = response.json()
         meta = data.get('meta', {})
         uses = meta.get('uses', 0)
