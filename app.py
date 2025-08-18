@@ -11,7 +11,7 @@ app = Flask(__name__)
 
 # --- Configuration ---
 LEMONSQUEEZY_API_KEY = os.environ.get('LEMONSQUEEZY_API_KEY')
-LICENSE_API_URL = "https://api.lemonsqueezy.com/v1/licenses" # Base URL for license actions
+LICENSE_API_URL = "https://api.lemonsqueezy.com/v1/licenses"
 UPLOAD_FOLDER = 'uploads'
 os.makedirs(UPLOAD_FOLDER, exist_ok=True )
 
@@ -32,13 +32,23 @@ def validate_license_key(license_key):
     except ValueError:
         return None, "Received an invalid response from the license server."
 
+# --- THIS FUNCTION IS NOW CORRECTED ---
 def increment_license_usage(license_key):
+    """
+    Increments the usage count for a given license key.
+    """
     if not LEMONSQUEEZY_API_KEY:
         print("API Key is missing, cannot increment usage.")
         return None
+
+    # The license key must be part of the URL itself.
+    increment_url = f"{LICENSE_API_URL}/{license_key}/increment"
+    headers = {'Authorization': f'Bearer {LEMONSQUEEZY_API_KEY}'}
+    
     try:
-        response = requests.post(f"{LICENSE_API_URL}/increment", headers={'Authorization': f'Bearer {LEMONSQUEEZY_API_KEY}'}, data={'license_key': license_key}, timeout=10)
-        response.raise_for_status()
+        # The API expects an empty payload for this request
+        response = requests.post(increment_url, headers=headers, timeout=10)
+        response.raise_for_status() # Will raise an error for 4xx or 5xx responses
         return response.json()
     except requests.exceptions.RequestException as e:
         print(f"API Error during usage increment: {e}")
@@ -68,7 +78,7 @@ def check_license():
         "remaining": remaining
     })
 
-# --- Brushset Processing Function ---
+# --- Brushset Processing Function (Unchanged) ---
 def process_brushset(filepath):
     base_filename = os.path.basename(filepath)
     temp_extract_dir = os.path.join(UPLOAD_FOLDER, f"extract_{uuid.uuid4().hex}")
@@ -97,7 +107,7 @@ def process_brushset(filepath):
         shutil.rmtree(temp_extract_dir, ignore_errors=True)
         return None, "An unexpected server error occurred during file processing.", None
 
-# --- Main Flask Routes ---
+# --- Main Flask Routes (Unchanged) ---
 @app.route('/')
 def home():
     return render_template('index.html')
@@ -158,7 +168,6 @@ def convert_single():
         
         key_path = os.path.join(session_dir, 'key.txt')
         if os.path.exists(key_path):
-            # THIS IS THE CORRECTED LINE (no stray period)
             with open(key_path, 'r') as f:
                 key_to_increment = f.read().strip()
             increment_license_usage(key_to_increment)
