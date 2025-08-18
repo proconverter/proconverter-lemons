@@ -14,12 +14,8 @@ LEMONSQUEEZY_API_KEY = os.environ.get('LEMONSQUEEZY_API_KEY')
 UPLOAD_FOLDER = 'uploads'
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
-# --- Lemon Squeezy Helper Functions (SIMPLE AND CORRECT) ---
+# --- Lemon Squeezy Helper Functions (FINAL VERSION) ---
 def validate_license_key(license_key):
-    """
-    Validates a license key using the dedicated Lemon Squeezy License API.
-    This is the simple, robust version.
-    """
     if not license_key:
         return None, "Please enter a license key."
     
@@ -31,9 +27,8 @@ def validate_license_key(license_key):
         data = response.json()
 
         if response.status_code == 200 and data.get('valid'):
-            return data, None # Success
+            return data, None
         else:
-            # The API provides its own error message, like "License key not found."
             return None, data.get('error', 'This license key is not valid.')
 
     except requests.exceptions.RequestException as e:
@@ -43,9 +38,6 @@ def validate_license_key(license_key):
         return None, "Received an invalid response from the license server."
 
 def increment_license_usage(license_key):
-    """
-    Increments the usage count for a given license key.
-    """
     if not LEMONSQUEEZY_API_KEY:
         return None, "Server configuration error."
 
@@ -59,12 +51,8 @@ def increment_license_usage(license_key):
         # In Test Mode, this call will fail with a 404. We simulate success.
         if response.status_code == 404:
              print("NOTE: License increment failed with 404, likely due to Test Mode. Simulating success.")
-             key_data, _ = validate_license_key(license_key)
-             if key_data:
-                 limit = key_data.get('meta', {}).get('activation_limit', 10)
-                 uses = key_data.get('meta', {}).get('uses', 0)
-                 return limit - (uses + 1), None
-             return 9, None
+             # We return -1 as a special signal to the frontend that this was a simulated success.
+             return -1, None
 
         response.raise_for_status()
         data = response.json()
@@ -103,12 +91,11 @@ def process_brushset(filepath):
         shutil.rmtree(temp_extract_dir, ignore_errors=True)
         return None, "An unexpected error occurred during file processing.", None
 
-# --- Main Flask Routes ---
+# --- Main Flask Routes (Unchanged) ---
 @app.route('/')
 def home():
     return render_template('index.html')
 
-# THIS IS THE NEWLY ADDED ROUTE THAT WAS MISSING
 @app.route('/check-license', methods=['POST'])
 def check_license():
     license_key = request.form.get('license_key')
@@ -117,10 +104,9 @@ def check_license():
     if error_message:
         return jsonify({"message": error_message}), 400
         
-    # If the key is valid, extract the usage data
     meta = key_data.get('meta', {})
     uses = meta.get('uses', 0)
-    activation_limit = meta.get('activation_limit', 10) # Default to 10 if not set
+    activation_limit = meta.get('activation_limit', 10)
     remaining = activation_limit - uses
     
     return jsonify({"message": "License is valid.", "remaining": remaining})
