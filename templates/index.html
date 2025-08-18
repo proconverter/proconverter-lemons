@@ -5,41 +5,33 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Procreate Stamp Converter</title>
     <style>
-        /* Added styles for disabled upload area */
-        .upload-area.disabled {
-            cursor: not-allowed;
-            background-color: #f8f9fa;
-            border-color: #e9ecef;
-        }
-        .upload-area.disabled svg path {
-            stroke: #ced4da;
-        }
-        .upload-area.disabled p {
-            color: #adb5bd;
-        }
-        /* All other CSS is unchanged */
+        /* --- Base Styles --- */
         body { font-family: "Helvetica Neue", Helvetica, Arial, sans-serif; background-color: #EAEAEA; color: #000000; margin: 0; padding: 40px 20px; display: flex; justify-content: center; align-items: center; flex-direction: column; font-weight: 400; -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
         .main-title { font-size: 18px; font-weight: 500; margin-bottom: 20px; letter-spacing: 0.8px; text-align: center; line-height: 1.2; }
+        @media (max-width: 480px) { .main-title { font-size: 16px; } }
+
+        /* --- Main Card --- */
         .converter-card { background-color: #FFFFFF; border-radius: 24px; box-shadow: 0 8px 32px rgba(0, 0, 0, 0.05); width: 100%; max-width: 400px; padding: 24px; box-sizing: border-box; margin-bottom: 20px; }
         .step-label { font-size: 16px; font-weight: 500; margin-bottom: 12px; }
+        
+        /* --- License Key Section --- */
         input[type="text"] { width: 100%; padding: 14px; font-size: 16px; border: none; border-radius: 12px; box-sizing: border-box; background-color: #2D2D2D; color: #FFFFFF; text-align: center; margin-bottom: 12px; font-weight: 400; }
         .balance-status { text-align: center; font-size: 14px; color: #333; margin-bottom: 24px; margin-top: -12px; padding: 10px; border-radius: 8px; background-color: #e2e3e5; display: none; }
         .balance-status.error { background-color: #f8d7da; color: #721c24; }
         .balance-status.success { background-color: #d4edda; color: #155724; }
-        .upload-area-label { display: block; /* No cursor property here, will be set by JS */ }
-        .upload-area { border: 2px dashed #D0D0D0; border-radius: 16px; padding: 30px; text-align: center; margin-bottom: 20px; transition: all 0.2s ease; }
+
+        /* --- Upload Area --- */
+        .upload-area-label { display: block; }
+        .upload-area { border: 2px dashed #D0D0D0; border-radius: 16px; padding: 30px; text-align: center; transition: all 0.2s ease; }
         .upload-area:hover:not(.disabled) { border-color: #999; }
+        .upload-area.disabled { cursor: not-allowed; background-color: #f8f9fa; border-color: #e9ecef; }
+        .upload-area.disabled svg path { stroke: #ced4da; }
+        .upload-area.disabled p { color: #adb5bd; }
         .upload-area svg { margin-bottom: 12px; transition: stroke 0.2s ease; }
         .upload-area p { color: #666; font-size: 14px; margin: 4px 0 0 0; font-weight: 400; transition: color 0.2s ease; }
-        .upload-requirement { text-align: center; font-size: 14px; color: #555; margin-bottom: 16px; font-weight: 400; }
-        .submit-button { width: 100%; padding: 16px; font-size: 16px; font-weight: 500; border-radius: 12px; border: none; cursor: pointer; background-color: #2D2D2D; color: #FFFFFF; transition: background-color 0.2s ease; margin-top: 20px; }
-        .submit-button:disabled { background-color: #ccc; cursor: not-allowed; }
-        .get-token-section { text-align: center; }
-        .get-token-section p { font-size: 16px; color: #333; margin-bottom: 12px; font-weight: 400; }
-        .get-token-button { display: inline-block; padding: 14px 28px; font-size: 16px; font-weight: 600; border-radius: 12px; border: none; cursor: pointer; background-color: #00AEEF; color: #FFFFFF; text-decoration: none; margin-bottom: 20px; transition: background-color 0.2s ease; }
-        .message-area { padding: 12px; margin-bottom: 20px; border-radius: 8px; text-align: center; font-size: 14px; font-weight: 400; display: none; }
-        .message-info { background-color: #e2e3e5; color: #383d41; }
-        .file-list { margin-top: 10px; font-size: 14px; color: #666; text-align: left; max-height: 150px; overflow-y: auto; border: 1px solid #eee; border-radius: 8px; padding: 10px; display: none; }
+        
+        /* --- File List --- */
+        .file-list { margin-top: 10px; font-size: 14px; color: #666; text-align: left; max-height: 150px; overflow-y: auto; border: 1px solid #eee; border-radius: 8px; padding: 10px; display: none; margin-bottom: 20px; }
         .file-list-item { display: flex; justify-content: space-between; align-items: center; padding: 4px 0; }
         .file-name { flex-grow: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-right: 10px; }
         .file-list-item .status { font-weight: 500; margin-left: 10px; }
@@ -49,6 +41,20 @@
         .status-failed { color: #dc3545; }
         .remove-file-btn { cursor: pointer; color: #aaa; font-weight: bold; font-size: 20px; padding: 0 5px; line-height: 1; }
         .remove-file-btn:hover { color: #333; }
+
+        /* --- Buttons and Info Text --- */
+        .submit-button { width: 100%; padding: 16px; font-size: 16px; font-weight: 500; border-radius: 12px; border: none; cursor: pointer; background-color: #2D2D2D; color: #FFFFFF; transition: background-color 0.2s ease; margin-top: 20px; }
+        .submit-button:disabled { background-color: #ccc; cursor: not-allowed; }
+        .info-text { text-align: center; font-size: 14px; color: #555; margin-top: 16px; }
+        .message-area { padding: 12px; margin-bottom: 20px; border-radius: 8px; text-align: center; font-size: 14px; font-weight: 400; display: none; background-color: #e2e3e5; color: #383d41; }
+        
+        /* --- Buy Credits Section (Now inside card) --- */
+        .get-token-section { text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #eee; }
+        .get-token-section p { font-size: 16px; color: #333; margin-bottom: 12px; font-weight: 400; }
+        .get-token-button { display: inline-block; padding: 14px 28px; font-size: 16px; font-weight: 600; border-radius: 12px; border: none; cursor: pointer; background-color: #00AEEF; color: #FFFFFF; text-decoration: none; transition: background-color 0.2s ease; }
+        .get-token-button:hover { background-color: #0099d4; }
+
+        /* --- Footer and Modals --- */
         .footer { margin-top: 40px; padding-top: 20px; border-top: 1px solid #D0D0D0; text-align: center; font-size: 12px; color: #666; width: 100%; max-width: 400px; }
         .footer a { color: #666; text-decoration: none; margin: 0 8px; font-weight: 400; }
         .modal-overlay { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.5); animation: fadeIn 0.3s; }
@@ -63,10 +69,12 @@
 
     <div class="converter-card">
         <form id="uploadForm" novalidate>
+            <!-- Step 1: License Key -->
             <p class="step-label">Step 1: Enter Your License Key</p>
             <input type="text" id="license_key" name="license_key" placeholder="Enter your license key here">
             <div class="balance-status" id="balanceStatus"></div>
 
+            <!-- Step 2: Upload -->
             <p class="step-label">Step 2: Upload Your .brushset Files</p>
             <label for="brush_files" class="upload-area-label" id="uploadAreaLabel">
                 <div class="upload-area disabled" id="uploadArea">
@@ -77,17 +85,18 @@
             </label>
             <input type="file" id="brush_files" name="brush_files" accept=".brushset" multiple style="display: none;" disabled>
             <div class="file-list" id="fileList"></div>
-            <div class="message-area message-info" id="initialMessage" style="display: block;">
-                This tool extracts stamp images (min 1024px). It does not convert complex brush textures.
-            </div>
-            <p class="upload-requirement">Upload Requirement: Must be valid Procreate .brushset files.</p>
-            <button type="submit" class="submit-button" id="submitBtn" disabled>Convert Your Brushsets</button>
-        </form>
-    </div>
+            <div class="message-area" id="messageArea"></div>
 
-    <div class="get-token-section">
-        <p>Need more conversion credits?</p>
-        <a href="https://presentandcherish.lemonsqueezy.com/buy/9fac6a82-c127-4b2e-845d-dec42c9f33ce" target="_blank" class="get-token-button" id="buyBtn">Buy Credits Here</a>
+            <!-- Convert Button and Info Text -->
+            <button type="submit" class="submit-button" id="submitBtn" disabled>Convert Your Brushsets</button>
+            <p class="info-text">This tool extracts stamp images (min 1024px). It does not convert complex brush textures.</p>
+
+            <!-- Buy Credits Section (Now inside the card) -->
+            <div class="get-token-section">
+                <p>Don't have a license key?</p>
+                <a href="https://presentandcherish.lemonsqueezy.com/buy/9fac6a82-c127-4b2e-845d-dec42c9f33ce" target="_blank" class="get-token-button" id="buyBtn">Buy Credits Here</a>
+            </div>
+        </form>
     </div>
 
     <footer class="footer">
@@ -95,8 +104,25 @@
         <p><a href="javascript:void(0 );" onclick="openModal('policyModal')">Terms & Privacy</a></p>
     </footer>
 
-    <div id="policyModal" class="modal-overlay">...</div>
-    <div id="errorModal" class="modal-overlay">...</div>
+    <!-- Modals (HTML structure is minimal here for brevity) -->
+    <div id="policyModal" class="modal-overlay">
+        <div class="modal-content">
+            <span class="close-button" onclick="closeModal('policyModal')">&times;</span>
+            <h2>Terms & Privacy</h2>
+            <p><strong>Effective Date:</strong> 18 August 2025</p>
+            <h3>Privacy Policy</h3>
+            <p>We collect your License Key solely to validate your purchase and process your file conversion. This data is processed via our payment partner, Lemon Squeezy. We never store, sell, or share your details unless required by law.</p>
+            <h3>Terms of Service</h3>
+            <p>By using this service, you agree that you are the rightful owner of a valid license key. Service functionality depends on a valid key and correct file uploads. We are not responsible for conversion failures due to user error or technical issues beyond our reasonable control.</p>
+        </div>
+    </div>
+    <div id="errorModal" class="modal-overlay">
+        <div class="modal-content">
+            <span class="close-button" onclick="closeModal('errorModal')">&times;</span>
+            <h2>An Error Occurred</h2>
+            <p id="errorModalText"></p>
+        </div>
+    </div>
 
     <script>
         document.addEventListener('DOMContentLoaded', () => {
@@ -108,12 +134,12 @@
             const uploadForm = document.getElementById('uploadForm');
             const uploadArea = document.getElementById('uploadArea');
             const uploadAreaLabel = document.getElementById('uploadAreaLabel');
-            const messageArea = document.querySelector('.message-area');
-            const initialMessage = document.getElementById('initialMessage');
+            const messageArea = document.getElementById('messageArea');
             const errorModalText = document.getElementById('errorModalText');
             
             let selectedFiles = [];
             let isLicenseValid = false;
+            let debounceTimer;
 
             window.openModal = (modalId) => document.getElementById(modalId).style.display = "block";
             window.closeModal = (modalId) => document.getElementById(modalId).style.display = "none";
@@ -121,14 +147,12 @@
 
             const showError = (text) => { errorModalText.textContent = text; openModal('errorModal'); };
             const showInfo = (text) => {
-                initialMessage.style.display = 'none';
                 messageArea.textContent = text;
-                messageArea.className = 'message-area message-info';
                 messageArea.style.display = 'block';
             };
             const resetMessages = () => {
                 messageArea.style.display = 'none';
-                initialMessage.style.display = 'block';
+                messageArea.textContent = '';
             };
 
             const setUploadAreaEnabled = (enabled) => {
@@ -170,8 +194,12 @@
                     
                     balanceStatus.innerHTML = `Valid Key! Remaining Conversions: <strong>${result.remaining}</strong>`;
                     balanceStatus.className = 'balance-status success';
-                    isLicenseValid = true;
-                    setUploadAreaEnabled(true);
+                    isLicenseValid = result.remaining > 0;
+                    setUploadAreaEnabled(isLicenseValid);
+                    if (!isLicenseValid) {
+                        balanceStatus.textContent = 'This key is valid, but has no conversions left.';
+                        balanceStatus.className = 'balance-status error';
+                    }
                 } catch (error) {
                     balanceStatus.textContent = error.message;
                     balanceStatus.className = 'balance-status error';
@@ -223,13 +251,15 @@
                 renderFileList();
             };
 
-            licenseKeyInput.addEventListener('blur', checkBalance);
             licenseKeyInput.addEventListener('input', () => {
+                clearTimeout(debounceTimer);
                 isLicenseValid = false;
                 balanceStatus.style.display = 'none';
                 setUploadAreaEnabled(false);
                 checkSubmitButtonState();
+                debounceTimer = setTimeout(checkBalance, 800); // Debounce API call
             });
+
             fileInput.addEventListener('change', (e) => handleFiles(e.target.files));
             uploadArea.addEventListener('dragover', (e) => { if (!fileInput.disabled) { e.preventDefault(); uploadArea.style.borderColor = '#999'; } });
             uploadArea.addEventListener('dragleave', (e) => { if (!fileInput.disabled) { e.preventDefault(); uploadArea.style.borderColor = '#D0D0D0'; } });
@@ -241,7 +271,7 @@
 
                 submitBtn.textContent = 'Converting...';
                 submitBtn.disabled = true;
-                setUploadAreaEnabled(false); // Disable upload during conversion
+                setUploadAreaEnabled(false);
                 showInfo('Starting conversion process...');
                 
                 const session_id = `session-${Date.now()}`;
@@ -286,7 +316,10 @@
                                 if (typeof result.remaining !== 'undefined' && result.remaining >= 0) {
                                     balanceStatus.innerHTML = `Valid Key! Remaining Conversions: <strong>${result.remaining}</strong>`;
                                     isLicenseValid = result.remaining > 0;
-                                    setUploadAreaEnabled(isLicenseValid);
+                                    if (!isLicenseValid) {
+                                        balanceStatus.textContent = 'This key is valid, but has no conversions left.';
+                                        balanceStatus.className = 'balance-status error';
+                                    }
                                 }
                             }
                         } catch (error) {
@@ -299,13 +332,14 @@
 
                     submitBtn.textContent = 'Convert Your Brushsets';
                     if (hasFailed) {
-                        renderFileList(); // Re-render to show 'X' buttons
-                        setUploadAreaEnabled(true); // Re-enable upload on failure
+                        renderFileList();
+                        setUploadAreaEnabled(true);
                     } else {
                         setTimeout(() => {
                             resetMessages();
                             selectedFiles = [];
                             renderFileList();
+                            setUploadAreaEnabled(isLicenseValid);
                         }, 5000);
                     }
                     checkSubmitButtonState();
