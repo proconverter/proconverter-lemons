@@ -68,7 +68,7 @@
                 <div class="upload-area">
                     <svg width="48" height="48" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M14 2H6C5.46957 2 4.96086 2.21071 4.58579 2.58579C4.21071 2.96086 4 3.46957 4 4V20C4 20.5304 4.21071 21.0391 4.58579 21.4142C4.96086 21.7893 5.46957 22 6 22H18C18.5304 22 19.0391 21.7893 19.4142 21.4142C19.7893 21.0391 20 20.5304 20 20V8L14 2Z" stroke="#D0D0D0" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M14 2V8H20" stroke="#D0D0D0" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M12 18V12" stroke="#D0D0D0" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M9 15L12 12L15 15" stroke="#D0D0D0" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
                     <p><span style="color: #000; font-weight: 500; text-decoration: underline;">Click to upload</span> or drag and drop</p>
-                    <p>Max file size 50 MB (up to 10 .brushsets )</p>
+                    <p>Max file size 50 MB (up to 10 .brushsets  )</p>
                 </div>
             </label>
             
@@ -147,16 +147,16 @@
         const errorModalText = document.getElementById('errorModalText');
         let selectedFiles = [];
 
-        function showMessage(text, isError = false) {
-            if (isError) {
-                errorModalText.textContent = text;
-                openModal('errorModal');
-            } else {
-                initialMessage.style.display = 'none';
-                messageArea.textContent = text;
-                messageArea.className = 'message-area message-info';
-                messageArea.style.display = 'block';
-            }
+        function showError(text) {
+            errorModalText.textContent = text;
+            openModal('errorModal');
+        }
+
+        function showInfo(text) {
+            initialMessage.style.display = 'none';
+            messageArea.textContent = text;
+            messageArea.className = 'message-area message-info';
+            messageArea.style.display = 'block';
         }
 
         function resetMessages() {
@@ -174,7 +174,9 @@
             selectedFiles.forEach(file => {
                 const item = document.createElement('div');
                 item.className = 'file-list-item';
-                item.innerHTML = `<span>${file.name}</span><span class="status status-pending" id="status-${file.id}">Pending</span>`;
+                // Use a sanitized version of the file name for the ID
+                const fileId = file.name.replace(/[^a-zA-Z0-9]/g, '') + file.lastModified;
+                item.innerHTML = `<span>${file.name}</span><span class="status status-pending" id="status-${fileId}">Pending</span>`;
                 fileListDisplay.appendChild(item);
             });
         }
@@ -189,15 +191,14 @@
                 errors.push('You can upload a maximum of 10 files.');
             }
 
-            currentFiles.slice(0, 10).forEach((file, index) => {
+            currentFiles.slice(0, 10).forEach(file => {
                 if (!file.name.toLowerCase().endsWith('.brushset')) {
-                    if (errors.indexOf('Please select only .brushset files.') === -1) {
+                    if (!errors.includes('Please select only .brushset files.')) {
                         errors.push('Please select only .brushset files.');
                     }
                     return;
                 }
                 totalSize += file.size;
-                file.id = `file-${Date.now()}-${index}`;
                 tempSelectedFiles.push(file);
             });
 
@@ -206,8 +207,8 @@
             }
 
             if (errors.length > 0) {
-                showMessage('Error: ' + errors.join(' '), true);
-                selectedFiles = [];
+                showError(errors.join(' '));
+                selectedFiles = []; // Clear selection on error
             } else {
                 resetMessages();
                 selectedFiles = tempSelectedFiles;
@@ -226,27 +227,29 @@
             e.preventDefault();
             const licenseKeyInput = document.getElementById('license_key');
             if (!licenseKeyInput.value.trim()) {
-                showMessage('Error: Please enter your License Key.', true);
+                showError('Please enter your License Key.');
                 return;
             }
             if (selectedFiles.length === 0) {
-                showMessage('Error: Please select at least one .brushset file.', true);
+                showError('Please select at least one .brushset file.');
                 return;
             }
 
             submitBtn.textContent = 'Converting...';
             submitBtn.disabled = true;
-            showMessage('Starting conversion process...', false);
+            showInfo('Starting conversion process... Your download will begin when complete.');
 
             const session_id = `session-${Date.now()}`;
             let hasFailed = false;
 
+            // Use an async IIFE (Immediately Invoked Function Expression) to handle the loop
             (async () => {
                 for (let i = 0; i < selectedFiles.length; i++) {
                     const file = selectedFiles[i];
-                    if (hasFailed) break;
+                    if (hasFailed) break; // Stop processing if a file fails
 
-                    const statusElem = document.getElementById(`status-${file.id}`);
+                    const fileId = file.name.replace(/[^a-zA-Z0-9]/g, '') + file.lastModified;
+                    const statusElem = document.getElementById(`status-${fileId}`);
                     statusElem.textContent = 'Processing...';
                     statusElem.className = 'status status-processing';
 
@@ -254,44 +257,28 @@
                     formData.append('license_key', licenseKeyInput.value.trim());
                     formData.append('brush_file', file);
                     formData.append('session_id', session_id);
-                    formData.append('is_first_file', i === 0 ? 'true' : 'false');
-                    formData.append('is_last_file', i === selectedFiles.length - 1 ? 'true' : 'false');
+                    formData.append('is_first_file', i === 0);
+                    formData.append('is_last_file', i === selectedFiles.length - 1);
                     
                     try {
                         const response = await fetch('/convert-single', { method: 'POST', body: formData });
                         const result = await response.json();
-                        if (!response.ok) { throw new Error(result.message || 'An unknown error occurred.'); }
+                        
+                        if (!response.ok) {
+                            // Throw an error with the message from the server's JSON response
+                            throw new Error(result.message || `Server returned status ${response.status}`);
+                        }
 
                         statusElem.textContent = 'Completed';
                         statusElem.className = 'status status-completed';
 
+                        // If the server sends a download URL, the process is complete
                         if (result.download_url) {
-                            showMessage('All files processed! Your download will begin shortly.', false);
+                            showInfo('All files processed! Your download will begin shortly.');
+                            // Create a temporary link to trigger the download
                             const a = document.createElement('a');
                             a.href = result.download_url;
-                            a.download = result.download_url.split('/').pop();
+                            a.download = 'Procreate_Stamps.zip'; // Suggest a friendly filename
                             document.body.appendChild(a);
                             a.click();
-                            a.remove();
-                        }
-                    } catch (error) {
-                        console.error('Conversion failed for file:', file.name, error);
-                        statusElem.textContent = 'Failed';
-                        statusElem.className = 'status status-failed';
-                        showMessage(`Error: ${error.message}`, true);
-                        hasFailed = true;
-                    }
-                }
-
-                submitBtn.textContent = 'Convert Your Brushsets';
-                submitBtn.disabled = false;
-                if (!hasFailed) {
-                    setTimeout(() => {
-                        resetMessages();
-                    }, 5000);
-                }
-            })();
-        });
-    </script>
-</body>
-</html>
+                            a
