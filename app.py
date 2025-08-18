@@ -16,7 +16,6 @@ UPLOAD_FOLDER = 'uploads'
 os.makedirs(UPLOAD_FOLDER, exist_ok=True )
 
 # --- Lemon Squeezy Helper Functions ---
-# MODIFIED to safely handle missing 'status' key
 def validate_license_key(license_key):
     if not license_key:
         return None, "License key was not provided."
@@ -25,22 +24,18 @@ def validate_license_key(license_key):
         data = response.json()
         
         if response.status_code == 200 and data.get('valid'):
-            # Use .get() for safe access. If 'status' doesn't exist, it will return None.
             status = data.get('meta', {}).get('status')
             if status in ['active', 'inactive']:
                  return data, None
             else:
-                 # This case handles if the key is valid but has a weird status like 'expired'
-                 return None, f"License key has an unsupported status: {status}"
+                 return None, f"License key has an unsupported status: '{status}'."
         else:
-            # This handles invalid keys that don't even have a 'meta' object
             return None, data.get('error', 'Invalid or unrecognized license key.')
             
     except requests.exceptions.RequestException as e:
         print(f"License API Request Error: {e}")
         return None, "Could not connect to the license server."
 
-# MODIFIED to handle test mode failure gracefully
 def increment_license_usage(license_key):
     if not LEMONSQUEEZY_API_KEY:
         print("API Key is missing, cannot increment usage.")
@@ -48,18 +43,14 @@ def increment_license_usage(license_key):
     try:
         response = requests.post(f"{LICENSE_API_URL}/{license_key}/increment", headers={'Authorization': f'Bearer {LEMONSQUEEZY_API_KEY}'}, timeout=10)
         
-        # In test mode, this will likely fail because the key is inactive. We'll simulate success.
         if response.status_code in [403, 404]:
              print("NOTE: License increment failed, likely due to Test Mode with an inactive key. Simulating success.")
-             # We can't get the real balance, so we must re-validate to get the current uses.
              key_data, _ = validate_license_key(license_key)
              if key_data:
-                 # Return a simulated 'remaining' count.
                  limit = key_data.get('meta', {}).get('activation_limit', 10)
                  uses = key_data.get('meta', {}).get('uses', 0)
-                 # Since increment failed, uses is still the same, but we pretend it worked.
                  return limit - (uses + 1), None
-             return 9, None # Fallback if re-validation fails
+             return 9, None
 
         response.raise_for_status()
         data = response.json()
@@ -72,8 +63,7 @@ def increment_license_usage(license_key):
         print(f"API Error during usage increment: {e}")
         return None, str(e)
 
-# --- All other routes and functions are unchanged ---
-
+# --- Routes ---
 @app.route('/check-license', methods=['POST'])
 def check_license():
     license_key = request.form.get('license_key')
