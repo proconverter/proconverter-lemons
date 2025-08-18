@@ -174,7 +174,7 @@
             selectedFiles.forEach(file => {
                 const item = document.createElement('div');
                 item.className = 'file-list-item';
-                // Use a sanitized version of the file name for the ID
+                // Use a sanitized version of the file name + timestamp for a more robust unique ID
                 const fileId = file.name.replace(/[^a-zA-Z0-9]/g, '') + file.lastModified;
                 item.innerHTML = `<span>${file.name}</span><span class="status status-pending" id="status-${fileId}">Pending</span>`;
                 fileListDisplay.appendChild(item);
@@ -281,4 +281,32 @@
                             a.download = 'Procreate_Stamps.zip'; // Suggest a friendly filename
                             document.body.appendChild(a);
                             a.click();
-                            a
+                            // Clean up the temporary link
+                            a.remove();
+                        }
+                    } catch (error) {
+                        console.error('Conversion failed for file:', file.name, error);
+                        statusElem.textContent = 'Failed';
+                        statusElem.className = 'status status-failed';
+                        // Display the specific error message from the server or network
+                        showError(`Error: ${error.message}`);
+                        hasFailed = true; // Set flag to stop processing further files
+                    }
+                }
+
+                // Reset the button and messages after the loop is finished or has failed
+                submitBtn.textContent = 'Convert Your Brushsets';
+                submitBtn.disabled = false;
+                if (!hasFailed) {
+                    // If successful, clear the file list and reset messages after a delay
+                    setTimeout(() => {
+                        resetMessages();
+                        selectedFiles = [];
+                        renderFileList();
+                    }, 5000);
+                }
+            })();
+        });
+    </script>
+</body>
+</html>
