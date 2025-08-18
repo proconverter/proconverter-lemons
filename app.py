@@ -149,7 +149,6 @@ def convert_single():
 
     if is_last_file:
         final_zip_filename = f"converted_{secure_filename(session_id)}.zip"
-        # THIS IS THE CORRECTED LINE
         final_zip_path = os.path.join(UPLOAD_FOLDER, final_zip_filename)
         
         with zipfile.ZipFile(final_zip_path, 'w') as zf:
@@ -159,7 +158,8 @@ def convert_single():
         
         key_path = os.path.join(session_dir, 'key.txt')
         if os.path.exists(key_path):
-            with open(key_path, 'r') as f:.
+            # THIS IS THE CORRECTED LINE (no stray period)
+            with open(key_path, 'r') as f:
                 key_to_increment = f.read().strip()
             increment_license_usage(key_to_increment)
 
