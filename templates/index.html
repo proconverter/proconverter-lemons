@@ -50,7 +50,7 @@
     <h1 class="main-title">PROCREATE STAMP TO PNG CONVERTER</h1>
 
     <div class="converter-card">
-        <form method="post" enctype="multipart/form-data" id="uploadForm" novalidate>
+        <form id="uploadForm" novalidate>
             <p class="step-label">Step 1: Enter Your License Key</p>
             <input type="text" id="license_key" name="license_key" placeholder="Enter your license key here">
             <div class="balance-status" id="balanceStatus"></div>
@@ -69,7 +69,8 @@
                 This tool extracts stamp images (min 1024px). It does not convert complex brush textures.
             </div>
             <p class="upload-requirement">Upload Requirement: Must be valid Procreate .brushset files.</p>
-            <button type="submit" class="submit-button" id="submitBtn">Convert Your Brushsets</button>
+            <!-- Button is now DISABLED by default -->
+            <button type="submit" class="submit-button" id="submitBtn" disabled>Convert Your Brushsets</button>
         </form>
     </div>
 
@@ -87,181 +88,213 @@
     <div id="errorModal" class="modal-overlay">...</div>
 
     <script>
-        // --- MODAL JAVASCRIPT ---
-        function openModal(modalId) { document.getElementById(modalId).style.display = "block"; }
-        function closeModal(modalId) { document.getElementById(modalId).style.display = "none"; }
-        window.onclick = function(event) { if (event.target.classList.contains('modal-overlay')) { event.target.style.display = "none"; } }
-
-        // --- DOM Elements ---
-        const licenseKeyInput = document.getElementById('license_key');
-        const balanceStatus = document.getElementById('balanceStatus');
-        const fileInput = document.getElementById('brush_files');
-        const fileListDisplay = document.getElementById('fileList');
-        const submitBtn = document.getElementById('submitBtn');
-        const uploadForm = document.getElementById('uploadForm');
-        const uploadArea = document.querySelector('.upload-area');
-        const messageArea = document.querySelector('.message-area');
-        const initialMessage = document.getElementById('initialMessage');
-        const errorModalText = document.getElementById('errorModalText');
-        
-        let selectedFiles = [];
-        let isLicenseValid = false;
-
-        // --- Helper Functions ---
-        function showError(text) { errorModalText.textContent = text; openModal('errorModal'); }
-        function showInfo(text) { initialMessage.style.display = 'none'; messageArea.textContent = text; messageArea.className = 'message-area message-info'; messageArea.style.display = 'block'; }
-        function resetMessages() { messageArea.style.display = 'none'; initialMessage.style.display = 'block'; }
-
-        function checkSubmitButtonState() {
-            submitBtn.disabled = !(isLicenseValid && selectedFiles.length > 0);
-        }
-
-        // --- BALANCE CHECK LOGIC ---
-        const checkBalance = async () => {
-            const licenseKey = licenseKeyInput.value.trim();
-            isLicenseValid = false; // Reset on every check
+        document.addEventListener('DOMContentLoaded', () => {
+            // --- DOM Elements ---
+            const licenseKeyInput = document.getElementById('license_key');
+            const balanceStatus = document.getElementById('balanceStatus');
+            const fileInput = document.getElementById('brush_files');
+            const fileListDisplay = document.getElementById('fileList');
+            const submitBtn = document.getElementById('submitBtn');
+            const uploadForm = document.getElementById('uploadForm');
+            const uploadArea = document.querySelector('.upload-area');
+            const messageArea = document.querySelector('.message-area');
+            const initialMessage = document.getElementById('initialMessage');
+            const errorModalText = document.getElementById('errorModalText');
             
-            if (licenseKey.length < 8) { // Basic check for minimum length
-                balanceStatus.style.display = 'none';
-                checkSubmitButtonState();
-                return;
-            }
+            let selectedFiles = [];
+            let isLicenseValid = false;
 
-            balanceStatus.textContent = 'Validating key...';
-            balanceStatus.className = 'balance-status';
-            balanceStatus.style.display = 'block';
-            
-            const formData = new FormData();
-            formData.append('license_key', licenseKey);
-            
-            try {
-                const response = await fetch('/check-license', { method: 'POST', body: formData });
-                const result = await response.json();
-                if (!response.ok) { throw new Error(result.message || 'An unknown error occurred.'); }
-                
-                balanceStatus.innerHTML = `Valid Key! Remaining Conversions: <strong>${result.remaining}</strong>`;
-                balanceStatus.className = 'balance-status success';
-                isLicenseValid = true;
-            } catch (error) {
-                balanceStatus.textContent = `${error.message}`;
-                balanceStatus.className = 'balance-status error';
+            // --- MODAL JAVASCRIPT ---
+            window.openModal = (modalId) => document.getElementById(modalId).style.display = "block";
+            window.closeModal = (modalId) => document.getElementById(modalId).style.display = "none";
+            window.onclick = (event) => { if (event.target.classList.contains('modal-overlay')) event.target.style.display = "none"; };
+
+            // --- HELPER FUNCTIONS ---
+            const showError = (text) => { errorModalText.textContent = text; openModal('errorModal'); };
+            const showInfo = (text) => {
+                initialMessage.style.display = 'none';
+                messageArea.textContent = text;
+                messageArea.className = 'message-area message-info';
+                messageArea.style.display = 'block';
+            };
+            const resetMessages = () => {
+                messageArea.style.display = 'none';
+                initialMessage.style.display = 'block';
+            };
+
+            // --- CORE STATE MANAGEMENT ---
+            const checkSubmitButtonState = () => {
+                submitBtn.disabled = !(isLicenseValid && selectedFiles.length > 0);
+            };
+
+            // --- BALANCE CHECK LOGIC ---
+            const checkBalance = async () => {
+                const licenseKey = licenseKeyInput.value.trim();
                 isLicenseValid = false;
-            }
-            checkSubmitButtonState();
-        };
-        licenseKeyInput.addEventListener('blur', checkBalance);
-        licenseKeyInput.addEventListener('input', () => { // Reset if user is typing
-            isLicenseValid = false;
-            balanceStatus.style.display = 'none';
-            checkSubmitButtonState();
-        });
-
-        // --- FILE HANDLING LOGIC ---
-        function renderFileList() {
-            fileListDisplay.innerHTML = '';
-            if (selectedFiles.length === 0) {
-                fileListDisplay.style.display = 'none';
-                checkSubmitButtonState();
-                return;
-            }
-            fileListDisplay.style.display = 'block';
-            selectedFiles.forEach((file, index) => {
-                const item = document.createElement('div');
-                item.className = 'file-list-item';
-                item.innerHTML = `
-                    <span class="file-name">${file.name}</span>
-                    <span class="status status-pending" id="status-${index}">Pending</span>
-                    <span class="remove-file-btn" data-index="${index}">&times;</span>
-                `;
-                fileListDisplay.appendChild(item);
-            });
-            document.querySelectorAll('.remove-file-btn').forEach(button => {
-                button.addEventListener('click', (e) => {
-                    const indexToRemove = parseInt(e.target.getAttribute('data-index'), 10);
-                    removeFile(indexToRemove);
-                });
-            });
-            checkSubmitButtonState();
-        }
-        function removeFile(index) { selectedFiles.splice(index, 1); renderFileList(); }
-        function handleFiles(files) {
-            let currentFiles = Array.from(files);
-            let errors = [];
-            currentFiles.forEach(file => {
-                if (selectedFiles.length >= 10) { if (!errors.includes('You can upload a maximum of 10 files.')) { errors.push('You can upload a maximum of 10 files.'); } return; }
-                if (selectedFiles.some(f => f.name === file.name && f.size === file.size)) { return; }
-                if (!file.name.toLowerCase().endsWith('.brushset')) { if (!errors.includes('Please select only .brushset files.')) { errors.push('Please select only .brushset files.'); } return; }
-                selectedFiles.push(file);
-            });
-            const totalSize = selectedFiles.reduce((acc, file) => acc + file.size, 0);
-            if (totalSize > 50 * 1024 * 1024) { errors.push('Total file size cannot exceed 50MB.'); selectedFiles.splice(selectedFiles.length - currentFiles.length); }
-            if (errors.length > 0) { showError(errors.join(' ')); }
-            renderFileList();
-        }
-        fileInput.addEventListener('change', (e) => handleFiles(e.target.files));
-        uploadArea.addEventListener('dragover', (e) => { e.preventDefault(); uploadArea.style.borderColor = '#999'; });
-        uploadArea.addEventListener('dragleave', (e) => { e.preventDefault(); uploadArea.style.borderColor = '#D0D0D0'; });
-        uploadArea.addEventListener('drop', (e) => { e.preventDefault(); uploadArea.style.borderColor = '#D0D0D0'; handleFiles(e.dataTransfer.files); });
-
-        // --- FORM SUBMISSION LOGIC ---
-        uploadForm.addEventListener('submit', function(e) {
-            e.preventDefault();
-            if (submitBtn.disabled) { return; } // Extra safety check
-
-            submitBtn.textContent = 'Converting...';
-            submitBtn.disabled = true;
-            showInfo('Starting conversion process...');
-            
-            const session_id = `session-${Date.now()}`;
-            let hasFailed = false;
-
-            (async () => {
-                for (let i = 0; i < selectedFiles.length; i++) {
-                    const file = selectedFiles[i];
-                    if (hasFailed) break;
-                    
-                    const statusElem = document.getElementById(`status-${i}`);
-                    const removeBtn = document.querySelector(`.remove-file-btn[data-index="${i}"]`);
-                    if(removeBtn) removeBtn.style.display = 'none';
-                    
-                    statusElem.textContent = 'Processing...';
-                    statusElem.className = 'status status-processing';
-                    
-                    const formData = new FormData();
-                    formData.append('license_key', licenseKeyInput.value.trim());
-                    formData.append('brush_file', file);
-                    formData.append('session_id', session_id);
-                    formData.append('is_first_file', i === 0);
-                    formData.append('is_last_file', i === selectedFiles.length - 1);
-                    
-                    try {
-                        const response = await fetch('/convert-single', { method: 'POST', body: formData });
-                        const result = await response.json();
-                        if (!response.ok) { throw new Error(result.message || `Server returned status ${response.status}`); }
-                        
-                        statusElem.textContent = 'Completed';
-                        statusElem.className = 'status status-completed';
-                        
-                        if (result.download_url) {
-                            showInfo('All files processed! Your download will begin shortly.');
-                            const a = document.createElement('a');
-                            a.href = result.download_url;
-                            a.download = 'Procreate_Stamps.zip';
-                            document.body.appendChild(a);
-                            a.click();
-                            a.remove();
-                            
-                            if (typeof result.remaining !== 'undefined' && result.remaining >= 0) {
-                                balanceStatus.innerHTML = `Valid Key! Remaining Conversions: <strong>${result.remaining}</strong>`;
-                                isLicenseValid = result.remaining > 0;
-                            }
-                        }
-                    } catch (error) {
-                        statusElem.textContent = 'Failed';
-                        statusElem.className = 'status status-failed';
-                        showError(`Error: ${error.message}`);
-                        hasFailed = true;
-                    }
+                
+                if (licenseKey.length < 8) {
+                    balanceStatus.style.display = 'none';
+                    checkSubmitButtonState();
+                    return;
                 }
 
-                // --- ROBUST UI
+                balanceStatus.textContent = 'Validating key...';
+                balanceStatus.className = 'balance-status';
+                balanceStatus.style.display = 'block';
+                
+                try {
+                    const formData = new FormData();
+                    formData.append('license_key', licenseKey);
+                    const response = await fetch('/check-license', { method: 'POST', body: formData });
+                    const result = await response.json();
+                    if (!response.ok) throw new Error(result.message || 'An unknown error occurred.');
+                    
+                    balanceStatus.innerHTML = `Valid Key! Remaining Conversions: <strong>${result.remaining}</strong>`;
+                    balanceStatus.className = 'balance-status success';
+                    isLicenseValid = true;
+                } catch (error) {
+                    balanceStatus.textContent = error.message;
+                    balanceStatus.className = 'balance-status error';
+                    isLicenseValid = false;
+                }
+                checkSubmitButtonState();
+            };
+
+            // --- FILE HANDLING LOGIC ---
+            const renderFileList = () => {
+                fileListDisplay.innerHTML = '';
+                if (selectedFiles.length === 0) {
+                    fileListDisplay.style.display = 'none';
+                } else {
+                    fileListDisplay.style.display = 'block';
+                    selectedFiles.forEach((file, index) => {
+                        const item = document.createElement('div');
+                        item.className = 'file-list-item';
+                        item.innerHTML = `
+                            <span class="file-name">${file.name}</span>
+                            <span class="status status-pending" id="status-${index}">Pending</span>
+                            <span class="remove-file-btn" data-index="${index}">&times;</span>
+                        `;
+                        fileListDisplay.appendChild(item);
+                    });
+                    document.querySelectorAll('.remove-file-btn').forEach(button => {
+                        button.addEventListener('click', (e) => {
+                            const indexToRemove = parseInt(e.target.getAttribute('data-index'), 10);
+                            selectedFiles.splice(indexToRemove, 1);
+                            renderFileList();
+                        });
+                    });
+                }
+                checkSubmitButtonState();
+            };
+
+            const handleFiles = (files) => {
+                let currentFiles = Array.from(files);
+                let errors = [];
+                currentFiles.forEach(file => {
+                    if (selectedFiles.length >= 10) { if (!errors.includes('You can upload a maximum of 10 files.')) errors.push('You can upload a maximum of 10 files.'); return; }
+                    if (selectedFiles.some(f => f.name === file.name && f.size === file.size)) return;
+                    if (!file.name.toLowerCase().endsWith('.brushset')) { if (!errors.includes('Please select only .brushset files.')) errors.push('Please select only .brushset files.'); return; }
+                    selectedFiles.push(file);
+                });
+                const totalSize = selectedFiles.reduce((acc, file) => acc + file.size, 0);
+                if (totalSize > 50 * 1024 * 1024) {
+                    errors.push('Total file size cannot exceed 50MB.');
+                    selectedFiles.splice(selectedFiles.length - currentFiles.length);
+                }
+                if (errors.length > 0) showError(errors.join(' '));
+                renderFileList();
+            };
+
+            // --- EVENT LISTENERS ---
+            licenseKeyInput.addEventListener('blur', checkBalance);
+            licenseKeyInput.addEventListener('input', () => {
+                isLicenseValid = false;
+                balanceStatus.style.display = 'none';
+                checkSubmitButtonState();
+            });
+            fileInput.addEventListener('change', (e) => handleFiles(e.target.files));
+            uploadArea.addEventListener('dragover', (e) => { e.preventDefault(); uploadArea.style.borderColor = '#999'; });
+            uploadArea.addEventListener('dragleave', (e) => { e.preventDefault(); uploadArea.style.borderColor = '#D0D0D0'; });
+            uploadArea.addEventListener('drop', (e) => { e.preventDefault(); uploadArea.style.borderColor = '#D0D0D0'; handleFiles(e.dataTransfer.files); });
+
+            // --- FORM SUBMISSION LOGIC ---
+            uploadForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+                if (submitBtn.disabled) return;
+
+                submitBtn.textContent = 'Converting...';
+                submitBtn.disabled = true;
+                showInfo('Starting conversion process...');
+                
+                const session_id = `session-${Date.now()}`;
+                let hasFailed = false;
+
+                (async () => {
+                    for (let i = 0; i < selectedFiles.length; i++) {
+                        const file = selectedFiles[i];
+                        if (hasFailed) break;
+                        
+                        const statusElem = document.getElementById(`status-${i}`);
+                        const removeBtn = document.querySelector(`.remove-file-btn[data-index="${i}"]`);
+                        if(removeBtn) removeBtn.style.display = 'none';
+                        
+                        statusElem.textContent = 'Processing...';
+                        statusElem.className = 'status status-processing';
+                        
+                        const formData = new FormData();
+                        formData.append('license_key', licenseKeyInput.value.trim());
+                        formData.append('brush_file', file);
+                        formData.append('session_id', session_id);
+                        formData.append('is_first_file', (i === 0).toString());
+                        formData.append('is_last_file', (i === selectedFiles.length - 1).toString());
+                        
+                        try {
+                            const response = await fetch('/convert-single', { method: 'POST', body: formData });
+                            const result = await response.json();
+                            if (!response.ok) throw new Error(result.message || `Server returned status ${response.status}`);
+                            
+                            statusElem.textContent = 'Completed';
+                            statusElem.className = 'status status-completed';
+                            
+                            if (result.download_url) {
+                                showInfo('All files processed! Your download will begin shortly.');
+                                const a = document.createElement('a');
+                                a.href = result.download_url;
+                                a.download = 'Procreate_Stamps.zip';
+                                document.body.appendChild(a);
+                                a.click();
+                                a.remove();
+                                
+                                if (typeof result.remaining !== 'undefined' && result.remaining >= 0) {
+                                    balanceStatus.innerHTML = `Valid Key! Remaining Conversions: <strong>${result.remaining}</strong>`;
+                                    isLicenseValid = result.remaining > 0;
+                                }
+                            }
+                        } catch (error) {
+                            statusElem.textContent = 'Failed';
+                            statusElem.className = 'status status-failed';
+                            showError(`Error: ${error.message}`);
+                            hasFailed = true;
+                        }
+                    }
+
+                    // --- ROBUST UI RESET LOGIC ---
+                    submitBtn.textContent = 'Convert Your Brushsets';
+                    if (hasFailed) {
+                        // If any file failed, re-render the list to show the 'X' buttons again
+                        renderFileList();
+                    } else {
+                        // If all succeeded, clear everything after a delay
+                        setTimeout(() => {
+                            resetMessages();
+                            selectedFiles = [];
+                            renderFileList();
+                        }, 5000);
+                    }
+                })();
+            });
+        });
+    </script>
+</body>
+</html>
