@@ -11,67 +11,65 @@ app = Flask(__name__)
 
 # --- Configuration ---
 LEMONSQUEEZY_API_KEY = os.environ.get('LEMONSQUEEZY_API_KEY')
-# This is the correct, separate endpoint for the License API
-LICENSE_API_URL = "https://api.lemonsqueezy.com/v1/licenses/validate"
+LICENSE_API_URL = "https://api.lemonsqueezy.com/v1/licenses" # Base URL for license actions
 UPLOAD_FOLDER = 'uploads'
 os.makedirs(UPLOAD_FOLDER, exist_ok=True )
 
-# --- Lemon Squeezy Helper Functions (REVISED FOR LICENSE API) ---
+# --- Lemon Squeezy Helper Functions ---
 def validate_license_key(license_key):
-    """
-    Validates a license key using the dedicated Lemon Squeezy License API.
-    """
     if not license_key:
         return None, "License key was not provided."
-
-    # The License API expects a POST request with form data
-    payload = {'license_key': license_key}
-    
     try:
-        response = requests.post(LICENSE_API_URL, data=payload, timeout=15)
-        
-        # The License API does not require bearer token authentication
-        # It validates the key directly.
-        
+        # Use the /validate endpoint
+        response = requests.post(f"{LICENSE_API_URL}/validate", data={'license_key': license_key}, timeout=15)
         data = response.json()
-
         if response.status_code == 200 and data.get('valid'):
-            # Key is valid, return the response data which includes license info
             return data, None
         else:
-            # Handle invalid key or other errors from the API
-            error_message = data.get('error', 'Invalid license key.')
-            return None, error_message
-
+            return None, data.get('error', 'Invalid license key.')
     except requests.exceptions.RequestException as e:
-        # Handles network errors
         print(f"License API Request Error: {e}")
         return None, "Could not connect to the license server."
     except ValueError:
-        # Handle cases where response is not valid JSON
         return None, "Received an invalid response from the license server."
 
-
 def increment_license_usage(license_key):
-    """
-    Increments the usage count for a given license key.
-    This uses a different endpoint from the main JSON:API.
-    """
     if not LEMONSQUEEZY_API_KEY:
         print("API Key is missing, cannot increment usage.")
         return None
-
-    increment_url = "https://api.lemonsqueezy.com/v1/licenses/increment"
-    headers = {'Authorization': f'Bearer {LEMONSQUEEZY_API_KEY}'}
-    payload = {'license_key': license_key}
-    
     try:
-        response = requests.post(increment_url, headers=headers, data=payload, timeout=10 )
+        # Use the /increment endpoint
+        response = requests.post(f"{LICENSE_API_URL}/increment", headers={'Authorization': f'Bearer {LEMONSQUEEZY_API_KEY}'}, data={'license_key': license_key}, timeout=10)
         response.raise_for_status()
         return response.json()
     except requests.exceptions.RequestException as e:
         print(f"API Error during usage increment: {e}")
         return None
+
+# --- THIS IS THE MISSING ROUTE ---
+@app.route('/check-license', methods=['POST'])
+def check_license():
+    license_key = request.form.get('license_key')
+    if not license_key:
+        return jsonify({"message": "Please provide a license key."}), 400
+
+    key_data, error_message = validate_license_key(license_key)
+    
+    if error_message:
+        return jsonify({"message": f"License Error: {error_message}"}), 400
+
+    # Extract usage details from the 'meta' object in the response
+    meta = key_data.get('meta', {})
+    uses = meta.get('uses', 0)
+    activation_limit = meta.get('activation_limit', 10) # Default to 10 if not set
+    remaining = activation_limit - uses
+
+    return jsonify({
+        "message": "License is valid.",
+        "uses": uses,
+        "limit": activation_limit,
+        "remaining": remaining
+    })
 
 # --- Brushset Processing Function (Unchanged) ---
 def process_brushset(filepath):
@@ -102,7 +100,7 @@ def process_brushset(filepath):
         shutil.rmtree(temp_extract_dir, ignore_errors=True)
         return None, "An unexpected server error occurred during file processing.", None
 
-# --- Main Flask Routes (Adjusted for new API logic) ---
+# --- Main Flask Routes ---
 @app.route('/')
 def home():
     return render_template('index.html')
@@ -117,12 +115,11 @@ def convert_single():
     if is_first_file:
         key_data, error_message = validate_license_key(license_key)
         if error_message:
-            # The License API provides its own clear error messages
             return jsonify({"message": f"License Error: {error_message}"}), 400
         
-        # Check activation limit from the validation response
-        uses = key_data.get('meta', {}).get('uses', 0)
-        activation_limit = key_data.get('meta', {}).get('activation_limit', 999) # Default to a high number if not set
+        meta = key_data.get('meta', {})
+        uses = meta.get('uses', 0)
+        activation_limit = meta.get('activation_limit', 10)
 
         if uses >= activation_limit:
             return jsonify({"message": "This license key has reached its usage limit."}), 403
@@ -130,7 +127,6 @@ def convert_single():
         session_dir = os.path.join(UPLOAD_FOLDER, secure_filename(session_id))
         os.makedirs(session_dir, exist_ok=True)
         
-        # Store the license key itself for incrementing later
         with open(os.path.join(session_dir, 'key.txt'), 'w') as f:
             f.write(license_key)
 
@@ -156,7 +152,7 @@ def convert_single():
 
     if is_last_file:
         final_zip_filename = f"converted_{secure_filename(session_id)}.zip"
-        final_zip_path = os.path.join(UPLOAD_FOLDER, final_zip_filename)
+        final_zip_path = os.path.join(UPLOAD_OADER, final_zip_filename)
         
         with zipfile.ZipFile(final_zip_path, 'w') as zf:
             for item in os.listdir(session_dir):
@@ -167,7 +163,6 @@ def convert_single():
         if os.path.exists(key_path):
             with open(key_path, 'r') as f:
                 key_to_increment = f.read().strip()
-            # Increment usage after successful processing
             increment_license_usage(key_to_increment)
 
         shutil.rmtree(session_dir, ignore_errors=True)
