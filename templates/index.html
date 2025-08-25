@@ -37,8 +37,7 @@
         .info-text { text-align: center; font-size: 14px; color: #555; margin-top: 16px; }
         .message-area { padding: 12px; margin-bottom: 20px; border-radius: 8px; text-align: center; font-size: 14px; font-weight: 400; display: none; background-color: #e2e3e5; color: #383d41; }
         .get-token-section { text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #eee; }
-        .get-token-section p { font-size: 16px; color: #333; margin-bottom: 12px; font-weight: 400; }
-        .get-token-button { display: inline-block; padding: 14px 28px; font-size: 16px; font-weight: 600; border-radius: 12px; border: none; cursor: pointer; background-color: #00AEEF; color: #FFFFFF; text-decoration: none; transition: background-color 0.2s ease; }
+        .get-token-button { display: inline-block; width: 100%; box-sizing: border-box; padding: 16px; font-size: 16px; font-weight: 600; border-radius: 12px; border: none; cursor: pointer; background-color: #00AEEF; color: #FFFFFF; text-decoration: none; transition: background-color 0.2s ease; }
         .get-token-button:hover { background-color: #0099d4; }
         .footer { margin-top: 40px; padding-top: 20px; border-top: 1px solid #D0D0D0; text-align: center; font-size: 12px; color: #666; width: 100%; max-width: 400px; }
         .footer a { color: #666; text-decoration: none; margin: 0 8px; font-weight: 400; }
@@ -76,10 +75,18 @@
             <button type="submit" class="submit-button" id="submitBtn" disabled>Convert Your Brushsets</button>
             <p class="info-text">This tool extracts stamp images (min 1024px  ). It does not convert complex brush textures.</p>
 
-            <!-- Buy Credits Section -->
+            <!-- REVISED Buy Credits Section -->
             <div class="get-token-section">
-                <p>Don't have a license key?</p>
-                <a href="https://presentandcherish.lemonsqueezy.com/buy/9fac6a82-c127-4b2e-845d-dec42c9f33ce" target="_blank" class="get-token-button" id="buyBtn">Buy Credits Here</a>
+                <a href="https://presentandcherish.lemonsqueezy.com/buy/9fac6a82-c127-4b2e-845d-dec42c9f33ce" target="_blank" class="get-token-button" id="buyBtn">Get Instant Access - $9.99</a>
+                <div style="text-align: left; font-size: 14px; color: #333; margin-top: 16px; padding: 0 10px;">
+                    <p style="font-weight: 500; margin-bottom: 8px;">Your one-time purchase unlocks:</p>
+                    <ul style="list-style-type: '✓ '; margin: 0; padding-left: 20px; line-height: 1.6;">
+                        <li><strong>10 Conversion Credits:</strong> Each credit handles a full session.</li>
+                        <li><strong>Batch Processing:</strong> Convert multiple .brushset files at once.</li>
+                        <li><strong>Lossless PNG Extraction:</strong> We extract the original stamp image without quality loss.</li>
+                        <li><strong>No Expiration:</strong> Use your credits anytime. No subscriptions.</li>
+                    </ul>
+                </div>
             </div>
         </form>
     </div>
