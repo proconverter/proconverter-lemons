@@ -23,7 +23,7 @@ def validate_license_key(license_key):
     payload = {'license_key': license_key}
     
     try:
-        response = requests.post(validate_url, data=payload, timeout=15 )
+        response = requests.post(validate_url, data=payload, timeout=15  )
         data = response.json()
 
         if response.status_code == 200 and data.get('valid'):
@@ -46,12 +46,10 @@ def increment_license_usage(license_key):
     payload = {'license_key': license_key}
     
     try:
-        response = requests.post(increment_url, headers=headers, data=payload, timeout=10 )
+        response = requests.post(increment_url, headers=headers, data=payload, timeout=10  )
         
-        # In Test Mode, this call will fail with a 404. We simulate success.
         if response.status_code == 404:
              print("NOTE: License increment failed with 404, likely due to Test Mode. Simulating success.")
-             # We return -1 as a special signal to the frontend that this was a simulated success.
              return -1, None
 
         response.raise_for_status()
@@ -82,6 +80,8 @@ def process_brushset(filepath):
                                     image_paths.append(img_path)
                         except (IOError, SyntaxError):
                             continue
+        # Sort images alphabetically to ensure consistent order
+        image_paths.sort()
         return image_paths, None, temp_extract_dir
     except zipfile.BadZipFile:
         shutil.rmtree(temp_extract_dir, ignore_errors=True)
@@ -91,7 +91,7 @@ def process_brushset(filepath):
         shutil.rmtree(temp_extract_dir, ignore_errors=True)
         return None, "An unexpected error occurred during file processing.", None
 
-# --- Main Flask Routes (Unchanged) ---
+# --- Main Flask Routes ---
 @app.route('/')
 def home():
     return render_template('index.html')
@@ -117,6 +117,8 @@ def convert_single():
     session_id = request.form.get('session_id')
     is_first_file = request.form.get('is_first_file') == 'true'
     is_last_file = request.form.get('is_last_file') == 'true'
+    # Get the file index to handle duplicate filenames
+    file_index = int(request.form.get('file_index', 0))
 
     if is_first_file:
         key_data, error_message = validate_license_key(license_key)
@@ -134,8 +136,13 @@ def convert_single():
     if not uploaded_file or not uploaded_file.filename:
         return jsonify({"message": "No file was provided."}), 400
 
-    filename = secure_filename(uploaded_file.filename)
-    temp_filepath = os.path.join(UPLOAD_FOLDER, f"temp_{uuid.uuid4().hex}_{filename}")
+    original_filename = secure_filename(uploaded_file.filename)
+    # Get the base name (e.g., "GIRL_POSES_1") from "GIRL_POSES_1.brushset"
+    brush_basename_raw = os.path.splitext(original_filename)[0]
+    # Prepend the file index to prevent collisions with duplicate filenames
+    brush_basename = f"{file_index}-{brush_basename_raw}"
+
+    temp_filepath = os.path.join(UPLOAD_FOLDER, f"temp_{uuid.uuid4().hex}_{original_filename}")
     uploaded_file.save(temp_filepath)
 
     images, error_msg, temp_extract_dir = process_brushset(temp_filepath)
@@ -146,17 +153,25 @@ def convert_single():
         return jsonify({"message": error_msg}), 400
 
     session_dir = os.path.join(UPLOAD_FOLDER, secure_filename(session_id))
-    for img_path in images:
-        shutil.move(img_path, os.path.join(session_dir, f"{uuid.uuid4().hex}.png"))
+    # Rename images sequentially as they are moved
+    for i, img_path in enumerate(images):
+        # New filename format: "0-GIRL_POSES_1_1.png", "0-GIRL_POSES_1_2.png", etc.
+        new_filename = f"{brush_basename}_{i + 1}.png"
+        shutil.move(img_path, os.path.join(session_dir, new_filename))
+        
     if temp_extract_dir: shutil.rmtree(temp_extract_dir, ignore_errors=True)
 
     if is_last_file:
         final_zip_filename = f"converted_{secure_filename(session_id)}.zip"
         final_zip_path = os.path.join(UPLOAD_FOLDER, final_zip_filename)
         with zipfile.ZipFile(final_zip_path, 'w') as zf:
-            for item in os.listdir(session_dir):
+            # Sort files by name to ensure a consistent order in the zip file
+            for item in sorted(os.listdir(session_dir)):
                 if item.endswith('.png'):
-                    zf.write(os.path.join(session_dir, item), os.path.basename(item))
+                    # When adding to zip, remove the prepended index for a cleaner final name
+                    # e.g., "0-GIRL_POSES_1_1.png" becomes "GIRL_POSES_1_1.png" in the zip
+                    final_arcname = item.split('-', 1)[1] if '-' in item else item
+                    zf.write(os.path.join(session_dir, item), final_arcname)
         
         new_remaining_balance = -1
         key_path = os.path.join(session_dir, 'key.txt')
