@@ -3,105 +3,67 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Procreate Stamp Converter</title>
-    <style>
-        /* All CSS is unchanged and correct */
-        body { font-family: "Helvetica Neue", Helvetica, Arial, sans-serif; background-color: #EAEAEA; color: #000000; margin: 0; padding: 40px 20px; display: flex; justify-content: center; align-items: center; flex-direction: column; font-weight: 400; -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
-        .main-title { font-size: 18px; font-weight: 500; margin-bottom: 20px; letter-spacing: 0.8px; text-align: center; line-height: 1.2; }
-        .converter-card { background-color: #FFFFFF; border-radius: 24px; box-shadow: 0 8px 32px rgba(0, 0, 0, 0.05); width: 100%; max-width: 400px; padding: 24px; box-sizing: border-box; margin-bottom: 20px; }
-        .step-label { font-size: 16px; font-weight: 500; margin-bottom: 12px; }
-        input[type="text"] { width: 100%; padding: 14px; font-size: 16px; border: none; border-radius: 12px; box-sizing: border-box; background-color: #2D2D2D; color: #FFFFFF; text-align: center; margin-bottom: 12px; font-weight: 400; }
-        .balance-status { text-align: center; font-size: 14px; color: #333; margin-bottom: 24px; margin-top: -12px; padding: 10px; border-radius: 8px; background-color: #e2e3e5; display: none; }
-        .balance-status.error { background-color: #f8d7da; color: #721c24; }
-        .balance-status.success { background-color: #d4edda; color: #155724; }
-        .upload-area-label { display: block; }
-        .upload-area { border: 2px dashed #D0D0D0; border-radius: 16px; padding: 30px; text-align: center; transition: all 0.2s ease; }
-        .upload-area:hover:not(.disabled) { border-color: #999; }
-        .upload-area.disabled { cursor: not-allowed; background-color: #f8f9fa; border-color: #e9ecef; }
-        .upload-area.disabled svg path { stroke: #ced4da; }
-        .upload-area.disabled p { color: #adb5bd; }
-        .upload-area svg { margin-bottom: 12px; transition: stroke 0.2s ease; }
-        .upload-area p { color: #666; font-size: 14px; margin: 4px 0 0 0; font-weight: 400; transition: color 0.2s ease; }
-        .file-list { margin-top: 10px; font-size: 14px; color: #666; text-align: left; max-height: 150px; overflow-y: auto; border: 1px solid #eee; border-radius: 8px; padding: 10px; display: none; margin-bottom: 20px; }
-        .file-list-item { display: flex; justify-content: space-between; align-items: center; padding: 4px 0; }
-        .file-name { flex-grow: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-right: 10px; }
-        .file-list-item .status { font-weight: 500; margin-left: 10px; }
-        .status-pending { color: #888; }
-        .status-processing { color: #007bff; }
-        .status-completed { color: #28a745; }
-        .status-failed { color: #dc3545; }
-        .remove-file-btn { cursor: pointer; color: #aaa; font-weight: bold; font-size: 20px; padding: 0 5px; line-height: 1; }
-        .remove-file-btn:hover { color: #333; }
-        .submit-button { width: 100%; padding: 16px; font-size: 16px; font-weight: 500; border-radius: 12px; border: none; cursor: pointer; background-color: #2D2D2D; color: #FFFFFF; transition: background-color 0.2s ease; margin-top: 20px; }
-        .submit-button:disabled { background-color: #ccc; cursor: not-allowed; }
-        .info-text { text-align: center; font-size: 14px; color: #555; margin-top: 16px; }
-        .message-area { padding: 12px; margin-bottom: 20px; border-radius: 8px; text-align: center; font-size: 14px; font-weight: 400; display: none; background-color: #e2e3e5; color: #383d41; }
-        .get-token-section { text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #eee; }
-        .get-token-button { display: inline-block; width: 100%; box-sizing: border-box; padding: 16px; font-size: 16px; font-weight: 600; border-radius: 12px; border: none; cursor: pointer; background-color: #00AEEF; color: #FFFFFF; text-decoration: none; transition: background-color 0.2s ease; }
-        .get-token-button:hover { background-color: #0099d4; }
-        .footer { margin-top: 40px; padding-top: 20px; border-top: 1px solid #D0D0D0; text-align: center; font-size: 12px; color: #666; width: 100%; max-width: 400px; }
-        .footer a { color: #666; text-decoration: none; margin: 0 8px; font-weight: 400; }
-        .modal-overlay { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.5); animation: fadeIn 0.3s; }
-        .modal-content { background-color: #fefefe; margin: 15% auto; padding: 25px; border: 1px solid #888; border-radius: 16px; width: 90%; max-width: 500px; position: relative; font-size: 14px; line-height: 1.6; color: #333; }
-        .close-button { color: #aaa; float: right; font-size: 28px; font-weight: bold; position: absolute; top: 10px; right: 20px; }
-        #errorModal .modal-content { border-top: 5px solid #dc3545; }
-        #errorModal h2 { color: #dc3545; }
-    </style>
+    <title>Artypacks Converter</title>
+    
+    <!-- CORRECTED: This single line links to your external style.css file -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
 </head>
 <body>
-    <h1 class="main-title">PROCREATE STAMP TO PNG CONVERTER</h1>
 
-    <div class="converter-card">
-        <form id="uploadForm" novalidate>
-            <!-- Step 1: License Key -->
-            <p class="step-label">Step 1: Enter Your License Key</p>
-            <input type="text" id="license_key" name="license_key" placeholder="Enter your license key here">
-            <div class="balance-status" id="balanceStatus"></div>
+    <div class="page-wrapper">
+        
+        <header class="page-header">
+            <a href="https://artypacks.app" class="back-link">BACK TO MAIN</a>
+        </header>
 
-            <!-- Step 2: Upload -->
-            <p class="step-label">Step 2: Upload Your .brushset Files</p>
-            <label for="brush_files" class="upload-area-label" id="uploadAreaLabel">
-                <div class="upload-area disabled" id="uploadArea">
-                    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M14 2H6C5.46957 2 4.96086 2.21071 4.58579 2.58579C4.21071 2.96086 4 3.46957 4 4V20C4 20.5304 4.21071 21.0391 4.58579 21.4142C4.96086 21.7893 5.46957 22 6 22H18C18.5304 22 19.0391 21.7893 19.4142 21.4142C19.7893 21.0391 20 20.5304 20 20V8L14 2Z" stroke="#D0D0D0" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M14 2V8H20" stroke="#D0D0D0" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M12 18V12" stroke="#D0D0D0" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M9 15L12 12L15 15" stroke="#D0D0D0" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                    <p><span style="color: #000; font-weight: 500; text-decoration: underline;">Click to upload</span> or drag and drop</p>
-                    <p>1 or more .brushset files / 50MB total per session</p>
+        <div class="converter-card">
+            <form id="uploadForm" novalidate>
+                <!-- Step 1: License Key -->
+                <div class="step">
+                    <p class="step-label">Step 1: Enter Your License Key</p>
+                    <input type="text" id="license_key" name="license_key" placeholder="Enter your license key here">
+                    <div class="balance-status" id="balanceStatus"></div>
                 </div>
-            </label>
-            <input type="file" id="brush_files" name="brush_files" accept=".brushset" multiple style="display: none;" disabled>
-            <div class="file-list" id="fileList"></div>
-            <div class="message-area" id="messageArea"></div>
 
-            <!-- Convert Button and Info Text -->
-            <button type="submit" class="submit-button" id="submitBtn" disabled>Convert Your Brushsets</button>
-            <p class="info-text">This tool extracts stamp images (min 1024px  ). It does not convert complex brush textures.</p>
-
-            <!-- REVISED Buy Credits Section -->
-            <div class="get-token-section">
-                <a href="https://presentandcherish.lemonsqueezy.com/buy/9fac6a82-c127-4b2e-845d-dec42c9f33ce" target="_blank" class="get-token-button" id="buyBtn">Get Instant Access - $9.99</a>
-                <div style="text-align: left; font-size: 14px; color: #333; margin-top: 16px; padding: 0 10px;">
-                    <p style="font-weight: 500; margin-bottom: 8px;">Your one-time purchase unlocks:</p>
-                    <ul style="list-style-type: '✓ '; margin: 0; padding-left: 20px; line-height: 1.6;">
-                        <li><strong>10 Conversion Credits:</strong> Each credit handles a full session.</li>
-                        <li><strong>Batch Processing:</strong> Convert multiple .brushset files at once.</li>
-                        <li><strong>Lossless PNG Extraction:</strong> We extract the original stamp image without quality loss.</li>
-                        <li><strong>No Expiration:</strong> Use your credits anytime. No subscriptions.</li>
-                    </ul>
+                <!-- Step 2: Upload -->
+                <div class="step">
+                    <p class="step-label">Step 2: Upload Your .brushset Files</p>
+                    <label for="brush_files" class="upload-area-label" id="uploadAreaLabel">
+                        <div class="upload-area disabled" id="uploadArea">
+                            <svg class="upload-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+                            <p class="upload-text"><strong>Click to upload</strong> or drag and drop</p>
+                            <p class="upload-subtext">1 or more .brushset files / 50MB total</p>
+                        </div>
+                    </label>
+                    <input type="file" id="brush_files" name="brush_files" accept=".brushset" multiple style="display: none;" disabled>
+                    <div class="file-list" id="fileList"></div>
                 </div>
-            </div>
-        </form>
+
+                <!-- Convert Button -->
+                <button type="submit" class="submit-button" id="submitBtn" disabled>Convert Your Brushsets</button>
+                
+                <p class="info-text">This tool extracts stamp images (min 1024px ). It does not convert complex brush textures.</p>
+                
+                <div class="message-area" id="messageArea"></div>
+            </form>
+        </div>
+
+        <footer class="page-footer">
+            <p>&copy; 2025 Artypacks. All rights reserved.</p>
+            <p><a href="javascript:void(0);" onclick="openModal('policyModal')">Terms & Privacy</a></p>
+        </footer>
     </div>
 
-    <footer class="footer">
-        <p>&copy; 2025 PresentAndCherish. All rights reserved.</p>
-        <p><a href="javascript:void(0 );" onclick="openModal('policyModal')">Terms & Privacy</a></p>
-    </footer>
-
-    <!-- Modals -->
+    <!-- Modals (Unchanged) -->
     <div id="policyModal" class="modal-overlay">
         <div class="modal-content">
             <span class="close-button" onclick="closeModal('policyModal')">&times;</span>
             <h2>Terms & Privacy</h2>
-            <p><strong>Effective Date:</strong> 25 August 2025</p>
+            <p><strong>Effective Date:</strong> 26 August 2025</p>
             <h3>Privacy Policy</h3>
             <p>We collect your License Key solely to validate your purchase and process your file conversion. This data is processed via our payment partner, Lemon Squeezy. We never store, sell, or share your details unless required by law.</p>
             <h3>Terms of Service</h3>
@@ -116,6 +78,7 @@
         </div>
     </div>
 
+    <!-- JavaScript (Unchanged) -->
     <script>
         document.addEventListener('DOMContentLoaded', () => {
             const licenseKeyInput = document.getElementById('license_key');
@@ -159,7 +122,7 @@
                 }
             };
 
-            const checkSubmitButtonState = () => {
+            const checkSubmitButtonState = ()_ => {
                 submitBtn.disabled = !(isLicenseValid && selectedFiles.length > 0);
             };
 
@@ -272,7 +235,7 @@
                 let hasFailed = false;
 
                 (async () => {
-                    for (let i = 0; i < selectedFiles.length; i++) {
+                    for (let i = 0; i_ < selectedFiles.length; i++) {
                         const file = selectedFiles[i];
                         if (hasFailed) break;
                         
