@@ -8,8 +8,9 @@ from werkzeug.utils import secure_filename
 from PIL import Image
 
 # --- Flask App Initialization ---
-# UPDATED: Added 'static_folder' and 'static_url_path' to serve CSS correctly
-app = Flask(__name__, static_folder='.', static_url_path='')
+# CORRECTED: This is the standard, correct way to initialize Flask
+# to find the 'static' and 'templates' folders automatically.
+app = Flask(__name__)
 
 # --- Configuration ---
 LEMONSQUEEZY_API_KEY = os.environ.get('LEMONSQUEEZY_API_KEY')
@@ -97,10 +98,7 @@ def process_brushset(filepath):
 def home():
     return render_template('index.html')
 
-# NEW: This route is needed to serve your style.css file
-@app.route('/<path:filename>')
-def serve_static(filename):
-    return send_from_directory('.', filename)
+# REMOVED: The extra '/<path:filename>' route is not needed with the standard setup.
 
 @app.route('/check-license', methods=['POST'])
 def check_license():
@@ -195,7 +193,6 @@ def download_zip(filename):
     safe_filename = secure_filename(filename)
     directory = UPLOAD_FOLDER
     try:
-        # UPDATED: Changed the download name to match the brand
         return send_from_directory(directory, safe_filename, as_attachment=True, download_name="Artypacks_Conversion.zip")
     finally:
         try:
