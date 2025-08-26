@@ -1,0 +1,186 @@
+/* --- Global Styles & Resets --- */
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    font-family: 'Inter', sans-serif;
+    background-color: #e5e5e5;
+    color: #18181b;
+    line-height: 1.6;
+    display: flex;
+    justify-content: center;
+    padding: 40px 20px;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+.page-wrapper {
+    width: 100%;
+    max-width: 480px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+/* --- Header --- */
+.page-header {
+    width: 100%;
+    text-align: center;
+    margin-bottom: 10px;
+}
+
+.back-link {
+    font-size: 14px;
+    font-weight: 700;
+    color: #52525b;
+    text-decoration: none;
+    letter-spacing: 1px;
+    transition: color 0.2s ease;
+}
+.back-link:hover {
+    color: #18181b;
+}
+
+/* --- Converter Card --- */
+.converter-card {
+    background-color: #ffffff;
+    padding: 32px;
+    border-radius: 24px;
+    width: 100%;
+}
+
+form {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+}
+
+.step-label {
+    font-size: 16px;
+    font-weight: 500;
+    margin-bottom: 12px;
+    text-align: left;
+}
+
+/* --- Input & Status --- */
+input[type="text"] {
+    width: 100%;
+    padding: 14px;
+    font-size: 16px;
+    border: 1px solid #d4d4d8;
+    border-radius: 12px;
+    box-sizing: border-box;
+    text-align: center;
+    background-color: #f4f4f5;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+input[type="text"]:focus {
+    outline: none;
+    border-color: #007bff;
+    background-color: #fff;
+    box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.2);
+}
+
+.balance-status {
+    text-align: center;
+    font-size: 14px;
+    margin-top: 10px;
+    padding: 8px;
+    border-radius: 8px;
+    display: none;
+}
+.balance-status.error { background-color: #fef2f2; color: #991b1b; }
+.balance-status.success { background-color: #f0fdf4; color: #166534; }
+
+/* --- Upload Area --- */
+.upload-area {
+    border: 2px dashed #d4d4d8;
+    border-radius: 16px;
+    padding: 30px;
+    text-align: center;
+    transition: all 0.2s ease;
+    cursor: pointer;
+    color: #71717a;
+}
+.upload-area:hover:not(.disabled) { border-color: #007bff; color: #007bff; }
+.upload-area.disabled { cursor: not-allowed; background-color: #f4f4f5; border-color: #e4e4e7; color: #a1a1aa;}
+.upload-icon { width: 36px; height: 36px; margin-bottom: 12px; stroke-width: 1.5; }
+.upload-text { font-size: 16px; }
+.upload-text strong { color: #18181b; text-decoration: underline; }
+.upload-subtext { font-size: 14px; color: #a1a1aa; margin-top: 4px; }
+
+/* --- File List --- */
+.file-list {
+    margin-top: 16px;
+    font-size: 14px;
+    max-height: 150px;
+    overflow-y: auto;
+    display: none;
+}
+.file-list-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px;
+    border-radius: 8px;
+    background-color: #f4f4f5;
+}
+.file-list-item + .file-list-item { margin-top: 8px; }
+.file-name { flex-grow: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-right: 10px; }
+.status { font-weight: 500; }
+.status-pending { color: #52525b; }
+.status-processing { color: #007bff; }
+.status-completed { color: #16a34a; }
+.status-failed { color: #dc2626; }
+.remove-file-btn { cursor: pointer; color: #a1a1aa; font-weight: bold; font-size: 20px; padding: 0 5px; line-height: 1; }
+.remove-file-btn:hover { color: #18181b; }
+
+/* --- Buttons & Messages --- */
+.submit-button {
+    width: 100%;
+    padding: 16px;
+    font-size: 16px;
+    font-weight: 700;
+    border-radius: 12px;
+    border: none;
+    cursor: pointer;
+    background-color: #18181b;
+    color: #ffffff;
+    transition: background-color 0.2s ease;
+}
+.submit-button:disabled { background-color: #d4d4d8; color: #a1a1aa; cursor: not-allowed; }
+
+.info-text {
+    text-align: center;
+    font-size: 14px;
+    color: #71717a;
+    margin-top: -12px;
+}
+
+.message-area {
+    padding: 12px;
+    border-radius: 8px;
+    text-align: center;
+    font-size: 14px;
+    display: none;
+    background-color: #eef2ff; color: #3730a3;
+}
+
+/* --- Footer & Modals --- */
+.page-footer {
+    padding: 20px;
+    text-align: center;
+    font-size: 14px;
+    color: #71717a;
+}
+.page-footer a { color: #71717a; text-decoration: underline; }
+.page-footer a:hover { color: #18181b; }
+
+.modal-overlay { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5); }
+.modal-content { background-color: #fefefe; margin: 15% auto; padding: 25px; border-radius: 16px; width: 90%; max-width: 500px; }
+.close-button { color: #aaa; float: right; font-size: 28px; font-weight: bold; cursor: pointer; }
+#errorModal .modal-content { border-top: 5px solid #dc2626; }
+#errorModal h2 { color: #dc2626; }
