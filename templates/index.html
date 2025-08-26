@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Artypacks Converter</title>
     
-    <!-- CORRECTED: This single line links to your external style.css file -->
+    <!-- This single line links to your external style.css file -->
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
     
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -34,7 +34,7 @@
                     <p class="step-label">Step 2: Upload Your .brushset Files</p>
                     <label for="brush_files" class="upload-area-label" id="uploadAreaLabel">
                         <div class="upload-area disabled" id="uploadArea">
-                            <svg class="upload-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+                            <svg class="upload-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
                             <p class="upload-text"><strong>Click to upload</strong> or drag and drop</p>
                             <p class="upload-subtext">1 or more .brushset files / 50MB total</p>
                         </div>
@@ -58,7 +58,7 @@
         </footer>
     </div>
 
-    <!-- Modals (Unchanged) -->
+    <!-- MODALS RE-ADDED HERE -->
     <div id="policyModal" class="modal-overlay">
         <div class="modal-content">
             <span class="close-button" onclick="closeModal('policyModal')">&times;</span>
@@ -122,7 +122,7 @@
                 }
             };
 
-            const checkSubmitButtonState = ()_ => {
+            const checkSubmitButtonState = () => {
                 submitBtn.disabled = !(isLicenseValid && selectedFiles.length > 0);
             };
 
@@ -235,7 +235,7 @@
                 let hasFailed = false;
 
                 (async () => {
-                    for (let i = 0; i_ < selectedFiles.length; i++) {
+                    for (let i = 0; i < selectedFiles.length; i++) {
                         const file = selectedFiles[i];
                         if (hasFailed) break;
                         
@@ -266,7 +266,7 @@
                                 showInfo('All files processed! Your download will begin shortly.');
                                 const a = document.createElement('a');
                                 a.href = result.download_url;
-                                a.download = 'Procreate_Stamps.zip';
+                                a.download = 'Artypacks_Conversion.zip';
                                 document.body.appendChild(a);
                                 a.click();
                                 a.remove();
