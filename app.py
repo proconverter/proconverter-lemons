@@ -7,14 +7,16 @@ from flask import Flask, render_template, request, jsonify, send_from_directory
 from werkzeug.utils import secure_filename
 from PIL import Image
 
-app = Flask(__name__)
+# --- Flask App Initialization ---
+# UPDATED: Added 'static_folder' and 'static_url_path' to serve CSS correctly
+app = Flask(__name__, static_folder='.', static_url_path='')
 
 # --- Configuration ---
 LEMONSQUEEZY_API_KEY = os.environ.get('LEMONSQUEEZY_API_KEY')
 UPLOAD_FOLDER = 'uploads'
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
-# --- Lemon Squeezy Helper Functions (FINAL VERSION) ---
+# --- Lemon Squeezy Helper Functions (Unchanged) ---
 def validate_license_key(license_key):
     if not license_key:
         return None, "Please enter a license key."
@@ -23,7 +25,7 @@ def validate_license_key(license_key):
     payload = {'license_key': license_key}
     
     try:
-        response = requests.post(validate_url, data=payload, timeout=15  )
+        response = requests.post(validate_url, data=payload, timeout=15 )
         data = response.json()
 
         if response.status_code == 200 and data.get('valid'):
@@ -46,7 +48,7 @@ def increment_license_usage(license_key):
     payload = {'license_key': license_key}
     
     try:
-        response = requests.post(increment_url, headers=headers, data=payload, timeout=10  )
+        response = requests.post(increment_url, headers=headers, data=payload, timeout=10 )
         
         if response.status_code == 404:
              print("NOTE: License increment failed with 404, likely due to Test Mode. Simulating success.")
@@ -80,7 +82,6 @@ def process_brushset(filepath):
                                     image_paths.append(img_path)
                         except (IOError, SyntaxError):
                             continue
-        # Sort images alphabetically to ensure consistent order
         image_paths.sort()
         return image_paths, None, temp_extract_dir
     except zipfile.BadZipFile:
@@ -95,6 +96,11 @@ def process_brushset(filepath):
 @app.route('/')
 def home():
     return render_template('index.html')
+
+# NEW: This route is needed to serve your style.css file
+@app.route('/<path:filename>')
+def serve_static(filename):
+    return send_from_directory('.', filename)
 
 @app.route('/check-license', methods=['POST'])
 def check_license():
@@ -117,7 +123,6 @@ def convert_single():
     session_id = request.form.get('session_id')
     is_first_file = request.form.get('is_first_file') == 'true'
     is_last_file = request.form.get('is_last_file') == 'true'
-    # Get the file index to handle duplicate filenames
     file_index = int(request.form.get('file_index', 0))
 
     if is_first_file:
@@ -137,9 +142,7 @@ def convert_single():
         return jsonify({"message": "No file was provided."}), 400
 
     original_filename = secure_filename(uploaded_file.filename)
-    # Get the base name (e.g., "GIRL_POSES_1") from "GIRL_POSES_1.brushset"
     brush_basename_raw = os.path.splitext(original_filename)[0]
-    # Prepend the file index to prevent collisions with duplicate filenames
     brush_basename = f"{file_index}-{brush_basename_raw}"
 
     temp_filepath = os.path.join(UPLOAD_FOLDER, f"temp_{uuid.uuid4().hex}_{original_filename}")
@@ -153,9 +156,7 @@ def convert_single():
         return jsonify({"message": error_msg}), 400
 
     session_dir = os.path.join(UPLOAD_FOLDER, secure_filename(session_id))
-    # Rename images sequentially as they are moved
     for i, img_path in enumerate(images):
-        # New filename format: "0-GIRL_POSES_1_1.png", "0-GIRL_POSES_1_2.png", etc.
         new_filename = f"{brush_basename}_{i + 1}.png"
         shutil.move(img_path, os.path.join(session_dir, new_filename))
         
@@ -165,11 +166,8 @@ def convert_single():
         final_zip_filename = f"converted_{secure_filename(session_id)}.zip"
         final_zip_path = os.path.join(UPLOAD_FOLDER, final_zip_filename)
         with zipfile.ZipFile(final_zip_path, 'w') as zf:
-            # Sort files by name to ensure a consistent order in the zip file
             for item in sorted(os.listdir(session_dir)):
                 if item.endswith('.png'):
-                    # When adding to zip, remove the prepended index for a cleaner final name
-                    # e.g., "0-GIRL_POSES_1_1.png" becomes "GIRL_POSES_1_1.png" in the zip
                     final_arcname = item.split('-', 1)[1] if '-' in item else item
                     zf.write(os.path.join(session_dir, item), final_arcname)
         
@@ -197,7 +195,8 @@ def download_zip(filename):
     safe_filename = secure_filename(filename)
     directory = UPLOAD_FOLDER
     try:
-        return send_from_directory(directory, safe_filename, as_attachment=True, download_name="Procreate_Stamps.zip")
+        # UPDATED: Changed the download name to match the brand
+        return send_from_directory(directory, safe_filename, as_attachment=True, download_name="Artypacks_Conversion.zip")
     finally:
         try:
             os.remove(os.path.join(directory, safe_filename))
