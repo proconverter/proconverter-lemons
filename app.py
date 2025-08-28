@@ -46,11 +46,13 @@ def process_brushset(filepath):
         return image_paths, None, temp_extract_dir
     except zipfile.BadZipFile:
         shutil.rmtree(temp_extract_dir, ignore_errors=True)
-        return None, "Error: The uploaded file is not a valid .brushset.", None
+        # UPDATED MESSAGE
+        return None, "This file seems to be corrupted or isn't a valid .brushset.", None
     except Exception as e:
         print(f"Error processing brushset: {e}")
         shutil.rmtree(temp_extract_dir, ignore_errors=True)
-        return None, "An unexpected error occurred during file processing.", None
+        # UPDATED MESSAGE
+        return None, "Something went wrong on our end. Please try again in a moment.", None
 
 # --- Main Flask Routes ---
 @app.route('/')
@@ -66,17 +68,20 @@ def check_license():
     try:
         response = supabase.from_('licenses').select('sessions_remaining, is_active').eq('license_key', license_key).single().execute()
         if response.data is None:
-            return jsonify({"message": "This license key does not exist."}), 404
+            # UPDATED MESSAGE
+            return jsonify({"message": "That license key wasn't found. Please check for typos."}), 404
         
         key_data = response.data
         if not key_data.get('is_active'):
-            return jsonify({"message": "This license key has not been activated yet."}), 403
+            # UPDATED MESSAGE
+            return jsonify({"message": "Your license isn't active yet. Please check your email."}), 403
 
         return jsonify({"remaining": key_data.get('sessions_remaining', 0)})
 
     except Exception as e:
         print(f"Check-license error: {e}")
-        return jsonify({"message": "Could not validate license key on the server."}), 500
+        # This message is now handled by the frontend, but we keep a generic server error here.
+        return jsonify({"message": "A server error occurred. Please try again later."}), 500
 
 # --- FINAL VERSION: Main conversion route with transactional logic ---
 @app.route('/convert', methods=['POST'])
@@ -92,16 +97,17 @@ def convert():
         try:
             validation_response = supabase.from_('licenses').select('sessions_remaining, is_active').eq('license_key', license_key).single().execute()
             if validation_response.data is None:
-                return jsonify({"message": "This license key does not exist."}), 404
+                return jsonify({"message": "That license key wasn't found. Please check for typos."}), 404
             
             key_data = validation_response.data
             if not key_data.get('is_active'):
-                return jsonify({"message": "This license key has not been activated yet."}), 403
+                return jsonify({"message": "Your license isn't active yet. Please check your email."}), 403
             if key_data.get('sessions_remaining', 0) <= 0:
+                # This message is now primarily handled by the frontend's "Buy More" link.
                 return jsonify({"message": "This license key has no conversions left."}), 403
         except Exception as e:
             print(f"Supabase validation error: {e}")
-            return jsonify({"message": f"Could not validate license: {str(e)}"}), 500
+            return jsonify({"message": f"Something went wrong on our end. Please try again."}), 500
 
     # --- Step 2: Process the file as usual. ---
     if not uploaded_file or not uploaded_file.filename:
@@ -120,7 +126,6 @@ def convert():
 
     if error_msg:
         if temp_extract_dir: shutil.rmtree(temp_extract_dir, ignore_errors=True)
-        # On failure, clean up the session directory to prevent partial zips later
         session_dir = os.path.join(UPLOAD_FOLDER, secure_filename(session_id))
         shutil.rmtree(session_dir, ignore_errors=True)
         return jsonify({"message": error_msg}), 400
@@ -138,10 +143,10 @@ def convert():
         final_zip_filename = f"converted_{secure_filename(session_id)}.zip"
         final_zip_path = os.path.join(UPLOAD_FOLDER, final_zip_filename)
         
-        # Check if there are any files to zip before proceeding
         if not os.path.exists(session_dir) or not os.listdir(session_dir):
              shutil.rmtree(session_dir, ignore_errors=True)
-             return jsonify({"message": "Conversion failed as no valid images were extracted."}), 400
+             # UPDATED MESSAGE
+             return jsonify({"message": "This .brushset doesn't contain any large stamp images."}), 400
 
         with zipfile.ZipFile(final_zip_path, 'w') as zf:
             for item in sorted(os.listdir(session_dir)):
@@ -151,7 +156,6 @@ def convert():
         
         shutil.rmtree(session_dir, ignore_errors=True)
         
-        # --- DEDUCT CREDIT HERE, AT THE END ---
         try:
             decrement_response = supabase.rpc('decrement_session', {'key_to_update': license_key}).execute()
             if decrement_response.data is not None:
@@ -160,7 +164,6 @@ def convert():
                 raise Exception("Failed to decrement session after successful conversion.")
         except Exception as e:
             print(f"CRITICAL: Conversion succeeded but credit deduction failed: {e}")
-            # The user gets the file, but we couldn't deduct a credit. Return current balance.
             balance_response = supabase.from_('licenses').select('sessions_remaining').eq('license_key', license_key).single().execute()
             new_remaining_balance = balance_response.data['sessions_remaining'] if balance_response.data else 0
 
@@ -170,7 +173,6 @@ def convert():
             "remaining": new_remaining_balance 
         })
 
-    # If not the last file, just return a success message.
     return jsonify({"message": "File processed successfully."})
 
 
