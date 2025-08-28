@@ -57,7 +57,7 @@ def process_brushset(filepath):
 def home():
     return render_template('index.html')
 
-# --- NEW: Route to check license balance ---
+# --- Route to check license balance ---
 @app.route('/check-license')
 def check_license():
     license_key = request.args.get('license_key')
@@ -78,22 +78,19 @@ def check_license():
         print(f"Check-license error: {e}")
         return jsonify({"message": "Could not validate license key on the server."}), 500
 
-# --- UPDATED: Main conversion route with corrected logic ---
+# --- UPDATED: Main conversion route with corrected error handling ---
 @app.route('/convert', methods=['POST'])
 def convert():
-    # --- 1. Get all data from the request ---
     license_key = request.form.get('license_key')
     session_id = request.form.get('session_id')
     is_first_file = request.form.get('is_first_file') == 'true'
     is_last_file = request.form.get('is_last_file') == 'true'
     uploaded_file = request.files.get('brush_file')
     
-    new_remaining_balance = -1 # Use -1 as a sentinel value
+    new_remaining_balance = -1
 
-    # --- 2. Validate license and decrement session ONCE for the first file ---
     if is_first_file:
         try:
-            # First, check if the key is valid and has sessions remaining
             validation_response = supabase.from_('licenses').select('sessions_remaining, is_active').eq('license_key', license_key).single().execute()
             if validation_response.data is None:
                 return jsonify({"message": "This license key does not exist."}), 404
@@ -104,19 +101,22 @@ def convert():
             if key_data.get('sessions_remaining', 0) <= 0:
                 return jsonify({"message": "This license key has reached its usage limit."}), 403
 
-            # If valid, THEN decrement the session count by calling the database function
+            # *** THIS IS THE CORRECTED PART ***
+            # We now handle the response from rpc() correctly.
             decrement_response = supabase.rpc('decrement_session', {'key_to_update': license_key}).execute()
-            if decrement_response.error:
-                raise Exception(decrement_response.error.message)
             
-            # The function returns the new balance, so we store it
-            new_remaining_balance = decrement_response.data
+            # A successful call returns data, so we check for that.
+            if decrement_response.data:
+                new_remaining_balance = decrement_response.data
+            else:
+                # If there's no data, something went wrong.
+                raise Exception("Failed to decrement session in database.")
 
         except Exception as e:
             print(f"Supabase validation/decrement error: {e}")
-            return jsonify({"message": f"Could not validate or update license: {e}"}), 500
+            # We now return the actual error message from the exception.
+            return jsonify({"message": f"Could not validate or update license: {str(e)}"}), 500
 
-    # --- 3. Process the uploaded file ---
     if not uploaded_file or not uploaded_file.filename:
         return jsonify({"message": "No file was provided."}), 400
 
@@ -143,7 +143,6 @@ def convert():
         
     if temp_extract_dir: shutil.rmtree(temp_extract_dir, ignore_errors=True)
 
-    # --- 4. If it's the last file, create the zip and return the final balance ---
     if is_last_file:
         final_zip_filename = f"converted_{secure_filename(session_id)}.zip"
         final_zip_path = os.path.join(UPLOAD_FOLDER, final_zip_filename)
@@ -155,15 +154,12 @@ def convert():
         
         shutil.rmtree(session_dir, ignore_errors=True)
         
-        # If the balance wasn't set on the first file (e.g., a single-file upload),
-        # we need to fetch it now. This is a fallback.
         if new_remaining_balance == -1:
              try:
                 final_balance_response = supabase.from_('licenses').select('sessions_remaining').eq('license_key', license_key).single().execute()
                 if final_balance_response.data:
                     new_remaining_balance = final_balance_response.data['sessions_remaining']
              except Exception:
-                # If it fails, we still proceed but can't show the new balance.
                 pass
 
         return jsonify({
@@ -172,7 +168,6 @@ def convert():
             "remaining": new_remaining_balance 
         })
 
-    # --- 5. If not the last file, just return a success message ---
     return jsonify({"message": "File processed successfully."})
 
 
@@ -188,5 +183,3 @@ def download_zip(filename):
         except OSError as e:
             print(f"Error cleaning up zip file '{safe_filename}': {e}")
 
-# REMOVED: The if __name__ == '__main__': block has been removed.
-# This is now the end of the file.
