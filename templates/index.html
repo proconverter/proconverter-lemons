@@ -11,15 +11,15 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
-    <!-- Google tag (gtag.js) -->
-<script async src="https://www.googletagmanager.com/gtag/js?id=G-8EZB1B931D"></script>
-<script>
-  window.dataLayer = window.dataLayer || [];
-  function gtag(){dataLayer.push(arguments);}
-  gtag('js', new Date());
+    <!-- Google tag (gtag.js ) -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-8EZB1B931D"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag( ){dataLayer.push(arguments);}
+      gtag('js', new Date());
 
-  gtag('config', 'G-8EZB1B931D');
-</script>
+      gtag('config', 'G-8EZB1B931D');
+    </script>
 </head>
 <body>
 
@@ -43,7 +43,7 @@
                     <p class="step-label">Step 2: Upload Your .brushset Files</p>
                     <label for="brush_files" class="upload-area-label" id="uploadAreaLabel">
                         <div class="upload-area disabled" id="uploadArea">
-                            <svg class="upload-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+                            <svg class="upload-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
                             <p class="upload-text"><strong>Click to upload</strong> or drag and drop</p>
                             <p class="upload-subtext">1 or more .brushset files / 50MB total</p>
                         </div>
@@ -55,21 +55,20 @@
                 <!-- Convert Button -->
                 <button type="submit" class="submit-button" id="submitBtn" disabled>Convert Your Brushsets</button>
                 
-                <p class="info-text">This tool extracts stamp images (min 1024px ). It does not convert complex brush textures.</p>
+                <p class="info-text">This tool extracts stamp images (min 1024px  ). It does not convert complex brush textures.</p>
                 
                 <div class="message-area" id="messageArea"></div>
             </form>
         </div>
 
         <footer class="page-footer">
-    <p>&copy; 2025 Artypacks. All rights reserved.</p>
-    <p>
-        <!-- The "mailto:" link will open the user's default email client -->
-        <a href="mailto:support@artypacks.app">Support</a> | 
-        <a href="#">Feedback</a> | 
-        <a href="#">Terms & Privacy</a>
-    </p>
-</footer>
+            <p>&copy; 2025 Artypacks. All rights reserved.</p>
+            <p>
+                <a href="mailto:support@artypacks.app">Support</a> | 
+                <a href="#">Feedback</a> | 
+                <a href="#">Terms & Privacy</a>
+            </p>
+        </footer>
 
     </div>
 
@@ -93,9 +92,24 @@
         </div>
     </div>
 
-    <!-- JavaScript (Unchanged) -->
+    <!-- ===================================================================== -->
+    <!-- SCRIPT TAGS: Supabase library is added before your main script -->
+    <!-- ===================================================================== -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script>
-        document.addEventListener('DOMContentLoaded', () => {
+        document.addEventListener('DOMContentLoaded', ( ) => {
+            // =====================================================================
+            //  1. SUPABASE CONNECTION
+            // =====================================================================
+            const SUPABASE_URL = 'https://grajrxurqeojuvrvzstz.supabase.co';
+            const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdyYWpyeHVycWVvanV2cnZ6c3R6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTYzNDQ4MTIsImV4cCI6MjA3MTkyMDgxMn0.jPKh3z18iik94ToRazHgkx3_R5BE51H4ws6Wh_sgKOo';
+            const supabase = Supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+            console.log('Supabase Client Initialized:', supabase);
+
+
+            // =====================================================================
+            //  2. DOM ELEMENT REFERENCES (Unchanged)
+            // =====================================================================
             const licenseKeyInput = document.getElementById('license_key');
             const balanceStatus = document.getElementById('balanceStatus');
             const fileInput = document.getElementById('brush_files');
@@ -112,6 +126,9 @@
             let debounceTimer;
             let currentBalance = 0;
 
+            // =====================================================================
+            //  3. HELPER FUNCTIONS (Unchanged)
+            // =====================================================================
             window.openModal = (modalId) => document.getElementById(modalId).style.display = "block";
             window.closeModal = (modalId) => document.getElementById(modalId).style.display = "none";
             window.onclick = (event) => { if (event.target.classList.contains('modal-overlay')) event.target.style.display = "none"; };
@@ -141,12 +158,15 @@
                 submitBtn.disabled = !(isLicenseValid && selectedFiles.length > 0);
             };
 
+            // =====================================================================
+            //  4. CORE LOGIC - CHECK BALANCE (MODIFIED FOR SUPABASE)
+            // =====================================================================
             const checkBalance = async () => {
                 const licenseKey = licenseKeyInput.value.trim();
                 isLicenseValid = false;
                 setUploadAreaEnabled(false);
                 
-                if (licenseKey.length < 8) {
+                if (licenseKey.length < 8) { // Basic validation
                     balanceStatus.style.display = 'none';
                     checkSubmitButtonState();
                     return;
@@ -157,21 +177,39 @@
                 balanceStatus.style.display = 'block';
                 
                 try {
-                    const formData = new FormData();
-                    formData.append('license_key', licenseKey);
-                    const response = await fetch('/check-license', { method: 'POST', body: formData });
-                    const result = await response.json();
-                    if (!response.ok) throw new Error(result.message);
-                    
-                    currentBalance = result.remaining;
+                    // Query Supabase directly
+                    const { data, error } = await supabase
+                        .from('licenses') // The name of your table
+                        .select('sessions_remaining, is_active') // The columns you want to get
+                        .eq('license_key', licenseKey) // Find the row where license_key matches
+                        .single(); // We expect only one result
+
+                    if (error && error.code !== 'PGRST116') {
+                        // PGRST116 means "no rows found", which is not a server error.
+                        // Any other error is a real problem.
+                        throw new Error('Could not connect to the license server. Please try again.');
+                    }
+
+                    if (!data) {
+                        throw new Error('This license key does not exist.');
+                    }
+
+                    if (!data.is_active) {
+                        throw new Error('This license key has not been activated yet.');
+                    }
+
+                    currentBalance = data.sessions_remaining;
                     balanceStatus.innerHTML = `Valid Key! Remaining Conversions: <strong>${currentBalance}</strong>`;
                     balanceStatus.className = 'balance-status success';
+                    
                     isLicenseValid = currentBalance > 0;
                     setUploadAreaEnabled(isLicenseValid);
+
                     if (!isLicenseValid) {
                         balanceStatus.textContent = 'This key is valid, but has no conversions left.';
                         balanceStatus.className = 'balance-status error';
                     }
+
                 } catch (error) {
                     balanceStatus.textContent = error.message;
                     balanceStatus.className = 'balance-status error';
@@ -181,6 +219,11 @@
                 checkSubmitButtonState();
             };
 
+            // =====================================================================
+            //  5. FILE HANDLING & FORM SUBMISSION (Unchanged for now)
+            //  NOTE: The form submission logic will need to be updated next to
+            //  decrement the session count in Supabase.
+            // =====================================================================
             const renderFileList = () => {
                 fileListDisplay.innerHTML = '';
                 if (selectedFiles.length > 0) {
