@@ -95,18 +95,15 @@
     <!-- ===================================================================== -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     
-    <!-- MODIFIED SCRIPT TAG: Using type="module" to fix the error -->
     <script type="module">
-        // NOTE: We no longer need the 'DOMContentLoaded' event listener
-        
         // =====================================================================
         //  1. SUPABASE CONNECTION
         // =====================================================================
         const SUPABASE_URL = 'https://grajrxurqeojuvrvzstz.supabase.co';
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdyYWpyeHVycWVvanV2cnZ6c3R6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTYzNDQ4MTIsImV4cCI6MjA3MTkyMDgxMn0.jPKh3z18iik94ToRazHgkx3_R5BE51H4ws6Wh_sgKOo';
         
-        // This line was causing the error. Now it will work correctly.
-        const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY );
+        // CORRECTED LINE: Using capital 'S' for Supabase.createClient
+        const supabase = Supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY );
         console.log('Supabase Client Initialized:', supabase);
 
 
