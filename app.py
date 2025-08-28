@@ -1,9 +1,84 @@
+import os
+import requests
+import zipfile
+import shutil
+import uuid
+from flask import Flask, render_template, request, jsonify, send_from_directory
+from werkzeug.utils import secure_filename
+from PIL import Image
+from supabase import create_client, Client
+
+# --- Flask App Initialization ---
+app = Flask(__name__)
+
+# --- Configuration ---
+UPLOAD_FOLDER = 'uploads'
+os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+
+# --- Supabase Configuration ---
+SUPABASE_URL = os.environ.get('SUPABASE_URL')
+SUPABASE_SERVICE_KEY = os.environ.get('SUPABASE_SERVICE_KEY')
+
+if not SUPABASE_URL or not SUPABASE_SERVICE_KEY:
+    raise ValueError("Supabase URL and Service Key must be set in environment variables.")
+
+supabase: Client = create_client(SUPABASE_URL, SUPABASE_SERVICE_KEY)
+
+# --- Brushset Processing Function (Unchanged) ---
+def process_brushset(filepath):
+    temp_extract_dir = os.path.join(UPLOAD_FOLDER, f"extract_{uuid.uuid4().hex}")
+    os.makedirs(temp_extract_dir, exist_ok=True)
+    image_paths = []
+    try:
+        with zipfile.ZipFile(filepath, 'r') as brushset_zip:
+            brushset_zip.extractall(temp_extract_dir)
+            for root, _, files in os.walk(temp_extract_dir):
+                for name in files:
+                    if name.lower().endswith(('.png', '.jpg', '.jpeg')) and name.lower() != 'artwork.png':
+                        try:
+                            img_path = os.path.join(root, name)
+                            with Image.open(img_path) as img:
+                                if img.width >= 1024 and img.height >= 1024:
+                                    image_paths.append(img_path)
+                        except (IOError, SyntaxError):
+                            continue
+        image_paths.sort()
+        return image_paths, None, temp_extract_dir
+    except zipfile.BadZipFile:
+        shutil.rmtree(temp_extract_dir, ignore_errors=True)
+        return None, "Error: The uploaded file is not a valid .brushset.", None
+    except Exception as e:
+        print(f"Error processing brushset: {e}")
+        shutil.rmtree(temp_extract_dir, ignore_errors=True)
+        return None, "An unexpected error occurred during file processing.", None
+
 # --- Main Flask Routes ---
 @app.route('/')
 def home():
     return render_template('index.html')
 
-# !!! REPLACE THE OLD /convert ROUTE WITH THIS NEW ONE !!!
+# --- NEW: Route to check license balance ---
+@app.route('/check-license')
+def check_license():
+    license_key = request.args.get('license_key')
+    if not license_key:
+        return jsonify({"message": "License key is required."}), 400
+    try:
+        response = supabase.from_('licenses').select('sessions_remaining, is_active').eq('license_key', license_key).single().execute()
+        if response.data is None:
+            return jsonify({"message": "This license key does not exist."}), 404
+        
+        key_data = response.data
+        if not key_data.get('is_active'):
+            return jsonify({"message": "This license key has not been activated yet."}), 403
+
+        return jsonify({"remaining": key_data.get('sessions_remaining', 0)})
+
+    except Exception as e:
+        print(f"Check-license error: {e}")
+        return jsonify({"message": "Could not validate license key on the server."}), 500
+
+# --- UPDATED: Main conversion route with corrected logic ---
 @app.route('/convert', methods=['POST'])
 def convert():
     # --- 1. Get all data from the request ---
@@ -15,10 +90,10 @@ def convert():
     
     new_remaining_balance = -1 # Use -1 as a sentinel value
 
-    # --- 2. Validate license and decrement session ONCE ---
+    # --- 2. Validate license and decrement session ONCE for the first file ---
     if is_first_file:
         try:
-            # First, check if the key is valid and has sessions
+            # First, check if the key is valid and has sessions remaining
             validation_response = supabase.from_('licenses').select('sessions_remaining, is_active').eq('license_key', license_key).single().execute()
             if validation_response.data is None:
                 return jsonify({"message": "This license key does not exist."}), 404
@@ -29,7 +104,7 @@ def convert():
             if key_data.get('sessions_remaining', 0) <= 0:
                 return jsonify({"message": "This license key has reached its usage limit."}), 403
 
-            # If valid, THEN decrement the session count
+            # If valid, THEN decrement the session count by calling the database function
             decrement_response = supabase.rpc('decrement_session', {'key_to_update': license_key}).execute()
             if decrement_response.error:
                 raise Exception(decrement_response.error.message)
@@ -100,4 +175,18 @@ def convert():
     # --- 5. If not the last file, just return a success message ---
     return jsonify({"message": "File processed successfully."})
 
-# The rest of your app.py file (/download-zip route, etc.) remains the same.
+
+@app.route('/download-zip/<filename>')
+def download_zip(filename):
+    safe_filename = secure_filename(filename)
+    directory = UPLOAD_FOLDER
+    try:
+        return send_from_directory(directory, safe_filename, as_attachment=True, download_name="Artypacks_Conversion.zip")
+    finally:
+        try:
+            os.remove(os.path.join(directory, safe_filename))
+        except OSError as e:
+            print(f"Error cleaning up zip file '{safe_filename}': {e}")
+
+# REMOVED: The if __name__ == '__main__': block has been removed.
+# This is now the end of the file.
