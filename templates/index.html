@@ -102,7 +102,7 @@
         const SUPABASE_URL = 'https://grajrxurqeojuvrvzstz.supabase.co';
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdyYWpyeHVycWVvanV2cnZ6c3R6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTYzNDQ4MTIsImV4cCI6MjA3MTkyMDgxMn0.jPKh3z18iik94ToRazHgkx3_R5BE51H4ws6Wh_sgKOo';
         
-        // CORRECTED LINE: Using capital 'S' for Supabase.createClient
+        // THE ACTUAL FIX: Using capital 'S' for the Supabase object.
         const supabase = Supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY );
         console.log('Supabase Client Initialized:', supabase);
 
