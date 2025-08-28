@@ -78,7 +78,7 @@ def check_license():
         print(f"Check-license error: {e}")
         return jsonify({"message": "Could not validate license key on the server."}), 500
 
-# --- UPDATED: Main conversion route with corrected error handling ---
+# --- FINAL VERSION: Main conversion route with transactional logic ---
 @app.route('/convert', methods=['POST'])
 def convert():
     license_key = request.form.get('license_key')
@@ -87,8 +87,7 @@ def convert():
     is_last_file = request.form.get('is_last_file') == 'true'
     uploaded_file = request.files.get('brush_file')
     
-    new_remaining_balance = -1
-
+    # --- Step 1: On the first file, ONLY validate the license. Do NOT decrement yet. ---
     if is_first_file:
         try:
             validation_response = supabase.from_('licenses').select('sessions_remaining, is_active').eq('license_key', license_key).single().execute()
@@ -99,24 +98,12 @@ def convert():
             if not key_data.get('is_active'):
                 return jsonify({"message": "This license key has not been activated yet."}), 403
             if key_data.get('sessions_remaining', 0) <= 0:
-                return jsonify({"message": "This license key has reached its usage limit."}), 403
-
-            # *** THIS IS THE CORRECTED PART ***
-            # We now handle the response from rpc() correctly.
-            decrement_response = supabase.rpc('decrement_session', {'key_to_update': license_key}).execute()
-            
-            # A successful call returns data, so we check for that.
-            if decrement_response.data:
-                new_remaining_balance = decrement_response.data
-            else:
-                # If there's no data, something went wrong.
-                raise Exception("Failed to decrement session in database.")
-
+                return jsonify({"message": "This license key has no conversions left."}), 403
         except Exception as e:
-            print(f"Supabase validation/decrement error: {e}")
-            # We now return the actual error message from the exception.
-            return jsonify({"message": f"Could not validate or update license: {str(e)}"}), 500
+            print(f"Supabase validation error: {e}")
+            return jsonify({"message": f"Could not validate license: {str(e)}"}), 500
 
+    # --- Step 2: Process the file as usual. ---
     if not uploaded_file or not uploaded_file.filename:
         return jsonify({"message": "No file was provided."}), 400
 
@@ -133,6 +120,9 @@ def convert():
 
     if error_msg:
         if temp_extract_dir: shutil.rmtree(temp_extract_dir, ignore_errors=True)
+        # On failure, clean up the session directory to prevent partial zips later
+        session_dir = os.path.join(UPLOAD_FOLDER, secure_filename(session_id))
+        shutil.rmtree(session_dir, ignore_errors=True)
         return jsonify({"message": error_msg}), 400
 
     session_dir = os.path.join(UPLOAD_FOLDER, secure_filename(session_id))
@@ -143,9 +133,16 @@ def convert():
         
     if temp_extract_dir: shutil.rmtree(temp_extract_dir, ignore_errors=True)
 
+    # --- Step 3: If this is the LAST file, create the zip AND THEN deduct the credit. ---
     if is_last_file:
         final_zip_filename = f"converted_{secure_filename(session_id)}.zip"
         final_zip_path = os.path.join(UPLOAD_FOLDER, final_zip_filename)
+        
+        # Check if there are any files to zip before proceeding
+        if not os.path.exists(session_dir) or not os.listdir(session_dir):
+             shutil.rmtree(session_dir, ignore_errors=True)
+             return jsonify({"message": "Conversion failed as no valid images were extracted."}), 400
+
         with zipfile.ZipFile(final_zip_path, 'w') as zf:
             for item in sorted(os.listdir(session_dir)):
                 if item.endswith('.png'):
@@ -154,13 +151,18 @@ def convert():
         
         shutil.rmtree(session_dir, ignore_errors=True)
         
-        if new_remaining_balance == -1:
-             try:
-                final_balance_response = supabase.from_('licenses').select('sessions_remaining').eq('license_key', license_key).single().execute()
-                if final_balance_response.data:
-                    new_remaining_balance = final_balance_response.data['sessions_remaining']
-             except Exception:
-                pass
+        # --- DEDUCT CREDIT HERE, AT THE END ---
+        try:
+            decrement_response = supabase.rpc('decrement_session', {'key_to_update': license_key}).execute()
+            if decrement_response.data is not None:
+                new_remaining_balance = decrement_response.data
+            else:
+                raise Exception("Failed to decrement session after successful conversion.")
+        except Exception as e:
+            print(f"CRITICAL: Conversion succeeded but credit deduction failed: {e}")
+            # The user gets the file, but we couldn't deduct a credit. Return current balance.
+            balance_response = supabase.from_('licenses').select('sessions_remaining').eq('license_key', license_key).single().execute()
+            new_remaining_balance = balance_response.data['sessions_remaining'] if balance_response.data else 0
 
         return jsonify({
             "message": "Processing complete.",
@@ -168,6 +170,7 @@ def convert():
             "remaining": new_remaining_balance 
         })
 
+    # If not the last file, just return a success message.
     return jsonify({"message": "File processed successfully."})
 
 
@@ -182,4 +185,3 @@ def download_zip(filename):
             os.remove(os.path.join(directory, safe_filename))
         except OSError as e:
             print(f"Error cleaning up zip file '{safe_filename}': {e}")
-
