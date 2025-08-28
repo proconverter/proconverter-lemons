@@ -10,11 +10,11 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
-    <!-- Google tag (gtag.js ) -->
+    <!-- Google tag (gtag.js  ) -->
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-8EZB1B931D"></script>
     <script>
       window.dataLayer = window.dataLayer || [];
-      function gtag( ){dataLayer.push(arguments);}
+      function gtag(  ){dataLayer.push(arguments);}
       gtag('js', new Date());
       gtag('config', 'G-8EZB1B931D');
     </script>
@@ -41,7 +41,7 @@
                     <p class="step-label">Step 2: Upload Your .brushset Files</p>
                     <label for="brush_files" class="upload-area-label" id="uploadAreaLabel">
                         <div class="upload-area disabled" id="uploadArea">
-                            <svg class="upload-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+                            <svg class="upload-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
                             <p class="upload-text"><strong>Click to upload</strong> or drag and drop</p>
                             <p class="upload-subtext">1 or more .brushset files / 50MB total</p>
                         </div>
@@ -53,7 +53,7 @@
                 <!-- Convert Button -->
                 <button type="submit" class="submit-button" id="submitBtn" disabled>Convert Your Brushsets</button>
                 
-                <p class="info-text">This tool extracts stamp images (min 1024px ). It does not convert complex brush textures.</p>
+                <p class="info-text">This tool extracts stamp images (min 1024px  ). It does not convert complex brush textures.</p>
                 
                 <div class="message-area" id="messageArea"></div>
             </form>
@@ -95,7 +95,6 @@
     <!-- ===================================================================== -->
     <script type="module">
         // STEP 1: Import the createClient function directly from the Supabase CDN.
-        // This is the most reliable method and replaces the old <script src="..."> tag.
         import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
 
         // =====================================================================
@@ -103,12 +102,8 @@
         // =====================================================================
         const SUPABASE_URL = 'https://grajrxurqeojuvrvzstz.supabase.co';
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdyYWpyeHVycWVvanV2cnZ6c3R6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTYzNDQ4MTIsImV4cCI6MjA3MTkyMDgxMn0.jPKh3z18iik94ToRazHgkx3_R5BE51H4ws6Wh_sgKOo';
-        
-        // Now we can create the client because the function was imported above.
-        const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY );
-        
+        const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY  );
         console.log('Supabase Client Initialized (ESM Method):', supabase);
-
 
         // =====================================================================
         //  3. DOM ELEMENT REFERENCES (Unchanged)
@@ -191,7 +186,7 @@
                 }
 
                 if (!data) {
-                    throw new Error('This license key does not exist.');
+                    throw new 'Error'('This license key does not exist.');
                 }
 
                 if (!data.is_active) {
@@ -311,7 +306,8 @@
                     formData.append('file_index', i.toString());
                     
                     try {
-                        const response = await fetch('/convert-single', { method: 'POST', body: formData });
+                        // THIS IS THE ONE-LINE FIX
+                        const response = await fetch('/convert', { method: 'POST', body: formData });
                         const result = await response.json();
                         if (!response.ok) throw new Error(result.message);
                         
@@ -327,9 +323,8 @@
                             a.click();
                             a.remove();
                             
-                            if (result.remaining === -1) {
-                                currentBalance -= 1;
-                            } else if (typeof result.remaining !== 'undefined' && result.remaining >= 0) {
+                            // Update the balance on the screen with the new value from the server
+                            if (typeof result.remaining !== 'undefined' && result.remaining >= 0) {
                                 currentBalance = result.remaining;
                             }
                             
