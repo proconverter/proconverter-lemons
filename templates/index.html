@@ -170,12 +170,13 @@
                         balanceStatus.innerHTML = `No conversions left. <a href="${etsyListingUrl}" target="_blank">Buy more credits here!</a>`;
                         balanceStatus.className = 'balance-status error';
                     }
-                } catch (error ) {
-                    balanceStatus.textContent = error.message;
-                    balanceStatus.className = 'balance-status error';
-                    isLicenseValid = false;
-                    setUploadAreaEnabled(false);
-                }
+                // This is inside the checkBalance function
+} catch (error) {
+    balanceStatus.textContent = "Your license isn't valid. Please try again."; // <--- THIS IS THE NEW LINE
+    balanceStatus.className = 'balance-status error';
+    isLicenseValid = false;
+    setUploadAreaEnabled(false);
+}
                 checkSubmitButtonState();
             };
 
