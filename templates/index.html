@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Artypacks Converter</title>
     
-    <!-- This single line links to your external style.css file -->
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
     
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -136,7 +135,7 @@
                 submitBtn.disabled = !(isLicenseValid && selectedFiles.length > 0);
             };
 
-            // --- UPDATED: checkBalance Function ---
+            // --- UPDATED: checkBalance Function with "Buy More" link ---
             const checkBalance = async () => {
                 const licenseKey = licenseKeyInput.value.trim();
                 isLicenseValid = false;
@@ -153,22 +152,25 @@
                 balanceStatus.style.display = 'block';
                 
                 try {
-                    // This new endpoint gets the true balance from the server
                     const response = await fetch(`/check-license?license_key=${licenseKey}`);
                     const result = await response.json();
                     if (!response.ok) throw new Error(result.message);
                     
                     currentBalance = result.remaining;
-                    balanceStatus.innerHTML = `Valid Key! Remaining Conversions: <strong>${currentBalance}</strong>`;
-                    balanceStatus.className = 'balance-status success';
                     isLicenseValid = currentBalance > 0;
                     setUploadAreaEnabled(isLicenseValid);
 
-                    if (!isLicenseValid) {
-                        balanceStatus.textContent = 'This key is valid, but has no conversions left.';
+                    if (isLicenseValid) {
+                        balanceStatus.innerHTML = `Valid Key! Remaining Conversions: <strong>${currentBalance}</strong>`;
+                        balanceStatus.className = 'balance-status success';
+                    } else {
+                        // *** THIS IS THE NEW LOGIC ***
+                        // Replace the placeholder URL with your actual Etsy listing URL
+                        const etsyListingUrl = 'https://www.etsy.com/your/listing/url/here';
+                        balanceStatus.innerHTML = `No conversions left. <a href="${etsyListingUrl}" target="_blank">Buy more credits here!</a>`;
                         balanceStatus.className = 'balance-status error';
                     }
-                } catch (error) {
+                } catch (error ) {
                     balanceStatus.textContent = error.message;
                     balanceStatus.className = 'balance-status error';
                     isLicenseValid = false;
@@ -177,7 +179,7 @@
                 checkSubmitButtonState();
             };
 
-            // --- File List and Handling Functions ---
+            // --- File List and Handling Functions (Unchanged) ---
             const renderFileList = () => {
                 fileListDisplay.innerHTML = '';
                 if (selectedFiles.length > 0) {
@@ -219,7 +221,7 @@
                 renderFileList();
             };
 
-            // --- Event Listeners ---
+            // --- Event Listeners (Unchanged) ---
             licenseKeyInput.addEventListener('input', () => {
                 clearTimeout(debounceTimer);
                 isLicenseValid = false;
@@ -233,7 +235,7 @@
             uploadArea.addEventListener('dragleave', (e) => { if (!fileInput.disabled) { e.preventDefault(); uploadArea.style.borderColor = '#D0D0D0'; } });
             uploadArea.addEventListener('drop', (e) => { if (!fileInput.disabled) { e.preventDefault(); uploadArea.style.borderColor = '#D0D0D0'; handleFiles(e.dataTransfer.files); } });
 
-            // --- UPDATED: Form Submission Logic ---
+            // --- Form Submission Logic (Unchanged) ---
             uploadForm.addEventListener('submit', (e) => {
                 e.preventDefault();
                 if (submitBtn.disabled) return;
@@ -274,7 +276,6 @@
                             statusElem.textContent = 'Completed';
                             statusElem.className = 'status status-completed';
                             
-                            // This logic now only runs on the very last file of the session
                             if (result.download_url) {
                                 showInfo('All files processed! Your download will begin shortly.');
                                 const a = document.createElement('a');
@@ -284,16 +285,8 @@
                                 a.click();
                                 a.remove();
                                 
-                                // Directly use the final, correct balance from the server
-                                if (typeof result.remaining !== 'undefined' && result.remaining >= 0) {
-                                    currentBalance = result.remaining;
-                                    balanceStatus.innerHTML = `Valid Key! Remaining Conversions: <strong>${currentBalance}</strong>`;
-                                    isLicenseValid = currentBalance > 0;
-                                    if (!isLicenseValid) {
-                                        balanceStatus.textContent = 'This key is valid, but has no conversions left.';
-                                        balanceStatus.className = 'balance-status error';
-                                    }
-                                }
+                                // After a successful conversion, re-check the balance to display the new total or the "Buy More" link
+                                checkBalance();
                             }
                         } catch (error) {
                             statusElem.textContent = 'Failed';
@@ -305,22 +298,20 @@
 
                     submitBtn.textContent = 'Convert Your Brushsets';
                     if (hasFailed) {
-                        // If something failed, re-check the balance from the server to get the true state
                         checkBalance();
                     } else {
-                        // After a successful session, reset the form and UI
                         setTimeout(() => {
                             resetMessages();
                             selectedFiles = [];
                             renderFileList();
-                            setUploadAreaEnabled(isLicenseValid); // This uses the final, correct isLicenseValid state
+                            setUploadAreaEnabled(isLicenseValid);
                         }, 5000);
                     }
                     checkSubmitButtonState();
                 })();
             });
 
-            // --- Initial Check on Load ---
+            // --- Initial Check on Load (Unchanged) ---
             if (licenseKeyInput.value) {
                 checkBalance();
             }
