@@ -54,7 +54,6 @@
                 <!-- Convert Button -->
                 <button type="submit" class="submit-button" id="submitBtn" disabled>Convert Your Brushsets</button>
                 
-                <!-- This text will now be dynamic -->
                 <p class="info-text" id="infoText">This tool extracts stamp images (min 1024px  ). It does not convert complex brush textures.</p>
                 
                 <div class="message-area" id="messageArea"></div>
@@ -64,14 +63,11 @@
         <footer class="page-footer">
             <p>&copy; 2025 Artypacks. All rights reserved.</p>
             <p>
-                <a href="mailto:support@artypacks.app">Support</a> | 
-                <a href="#">Feedback</a> | 
-                <a href="#">Terms & Privacy</a>
+                <a href="javascript:void(0)" onclick="openModal('policyModal')">Terms & Privacy</a>
             </p>
         </footer>
 
     </div>
-
     <!-- MODALS -->
     <div id="policyModal" class="modal-overlay">
         <div class="modal-content">
@@ -106,17 +102,17 @@
             const uploadAreaLabel = document.getElementById('uploadAreaLabel');
             const messageArea = document.getElementById('messageArea');
             const errorModalText = document.getElementById('errorModalText');
-            const infoText = document.getElementById('infoText'); // Reference for the info text
+            const infoText = document.getElementById('infoText');
             
             // --- State Variables ---
             let selectedFiles = [];
             let isLicenseValid = false;
             let debounceTimer;
             let currentBalance = 0;
-            const originalInfoText = infoText.textContent; // Store the original text
+            const originalInfoText = infoText.textContent;
 
-            // *** NEW: Set initial guiding text ***
-            infoText.textContent = 'Please enter a valid license key above to activate the converter.';
+            // --- Set initial guiding text ---
+            infoText.textContent = 'Enter your license key above to activate the converter.';
 
             // --- Modal and Message Functions ---
             window.openModal = (modalId) => document.getElementById(modalId).style.display = "block";
@@ -140,7 +136,6 @@
             const checkSubmitButtonState = () => {
                 submitBtn.disabled = !(isLicenseValid && selectedFiles.length > 0);
             };
-
             // --- checkBalance Function ---
             const checkBalance = async () => {
                 const licenseKey = licenseKeyInput.value.trim();
@@ -191,6 +186,30 @@
                 checkSubmitButtonState();
             };
 
+            // --- renderFileList Function ---
+            const renderFileList = () => {
+                fileListDisplay.innerHTML = '';
+                if (selectedFiles.length > 0) {
+                    fileListDisplay.style.display = 'block';
+                    selectedFiles.forEach((file, index) => {
+                        const item = document.createElement('div');
+                        item.className = 'file-list-item';
+                        item.innerHTML = `<span class="file-name">${file.name}</span><span class="status status-pending" id="status-${index}">Pending</span><span class="remove-file-btn" data-index="${index}">&times;</span>`;
+                        fileListDisplay.appendChild(item);
+                    });
+                    document.querySelectorAll('.remove-file-btn').forEach(button => {
+                        button.addEventListener('click', (e) => {
+                            const indexToRemove = parseInt(e.target.getAttribute('data-index'), 10);
+                            selectedFiles.splice(indexToRemove, 1);
+                            renderFileList();
+                        });
+                    });
+                } else {
+                    fileListDisplay.style.display = 'none';
+                }
+                checkSubmitButtonState();
+            };
+
             // --- handleFiles Function ---
             const handleFiles = (files) => {
                 if (fileInput.disabled) return;
@@ -219,7 +238,6 @@
 
             // --- Event Listeners ---
             licenseKeyInput.addEventListener('input', () => {
-                // *** NEW: Restore original info text on first interaction ***
                 if (infoText.textContent !== originalInfoText) {
                     infoText.textContent = originalInfoText;
                 }
@@ -282,7 +300,7 @@
                                 a.href = result.download_url;
                                 a.download = 'Artypacks_Conversion.zip';
                                 document.body.appendChild(a);
-a.click();
+                                a.click();
                                 a.remove();
                                 
                                 checkBalance();
@@ -313,7 +331,6 @@ a.click();
             // --- Initial Check on Load ---
             if (licenseKeyInput.value) {
                 checkBalance();
-                // If key is autofilled, also switch the info text
                 infoText.textContent = originalInfoText;
             }
         });
