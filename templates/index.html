@@ -68,6 +68,7 @@
         </footer>
 
     </div>
+
     <!-- MODALS -->
     <div id="policyModal" class="modal-overlay">
         <div class="modal-content">
@@ -75,9 +76,9 @@
             <h2>Terms & Privacy</h2>
             <p><strong>Effective Date:</strong> 28 August 2025</p>
             <h3>Privacy Policy</h3>
-            <p>We collect your License Key solely to validate your purchase and process your file conversion. This data is processed via our payment partner, Lemon Squeezy. We never store, sell, or share your details unless required by law.</p>
+            <p>We collect your License Key solely to validate your purchase from our Etsy store and to process your file conversion. Your payment is handled entirely by Etsy; we never have access to your payment information. We do not store, sell, or share your license key details with third parties unless required by law.</p>
             <h3>Terms of Service</h3>
-            <p>By using this service, you agree that you are the rightful owner of a valid license key. Service functionality depends on a valid key and correct file uploads. We are not responsible for conversion failures due to user error or technical issues beyond our reasonable control.</p>
+            <p>Your use of this service requires a valid license key provided upon purchase. We are committed to providing a reliable and effective tool. If a conversion fails due to a clear error with our service, we will ensure your conversion credit is not consumed. However, we are not responsible for conversion failures resulting from incorrectly formatted, corrupted, or password-protected files. For any issues, we encourage you to <a href="mailto:support@artypacks.app">contact us</a> so we can assist.</p>
         </div>
     </div>
     <div id="errorModal" class="modal-overlay">
@@ -136,6 +137,7 @@
             const checkSubmitButtonState = () => {
                 submitBtn.disabled = !(isLicenseValid && selectedFiles.length > 0);
             };
+
             // --- checkBalance Function ---
             const checkBalance = async () => {
                 const licenseKey = licenseKeyInput.value.trim();
