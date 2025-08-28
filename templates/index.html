@@ -54,7 +54,8 @@
                 <!-- Convert Button -->
                 <button type="submit" class="submit-button" id="submitBtn" disabled>Convert Your Brushsets</button>
                 
-                <p class="info-text">This tool extracts stamp images (min 1024px  ). It does not convert complex brush textures.</p>
+                <!-- This text will now be dynamic -->
+                <p class="info-text" id="infoText">This tool extracts stamp images (min 1024px  ). It does not convert complex brush textures.</p>
                 
                 <div class="message-area" id="messageArea"></div>
             </form>
@@ -105,12 +106,17 @@
             const uploadAreaLabel = document.getElementById('uploadAreaLabel');
             const messageArea = document.getElementById('messageArea');
             const errorModalText = document.getElementById('errorModalText');
+            const infoText = document.getElementById('infoText'); // Reference for the info text
             
             // --- State Variables ---
             let selectedFiles = [];
             let isLicenseValid = false;
             let debounceTimer;
             let currentBalance = 0;
+            const originalInfoText = infoText.textContent; // Store the original text
+
+            // *** NEW: Set initial guiding text ***
+            infoText.textContent = 'Please enter a valid license key above to activate the converter.';
 
             // --- Modal and Message Functions ---
             window.openModal = (modalId) => document.getElementById(modalId).style.display = "block";
@@ -135,7 +141,7 @@
                 submitBtn.disabled = !(isLicenseValid && selectedFiles.length > 0);
             };
 
-            // --- checkBalance Function with Polished Messages ---
+            // --- checkBalance Function ---
             const checkBalance = async () => {
                 const licenseKey = licenseKeyInput.value.trim();
                 isLicenseValid = false;
@@ -156,7 +162,6 @@
                     const result = await response.json();
                     
                     if (!response.ok) {
-                        // Display the user-friendly message from the backend
                         balanceStatus.textContent = result.message;
                         balanceStatus.className = 'balance-status error';
                         isLicenseValid = false;
@@ -178,7 +183,6 @@
                         balanceStatus.className = 'balance-status error';
                     }
                 } catch (error ) {
-                    // This catches network errors or if the server is down
                     balanceStatus.textContent = "Your license isn't valid. Please try again.";
                     balanceStatus.className = 'balance-status error';
                     isLicenseValid = false;
@@ -187,7 +191,7 @@
                 checkSubmitButtonState();
             };
 
-            // --- handleFiles Function with 3-File Limit ---
+            // --- handleFiles Function ---
             const handleFiles = (files) => {
                 if (fileInput.disabled) return;
                 let currentFiles = Array.from(files);
@@ -213,8 +217,12 @@
                 renderFileList();
             };
 
-            // --- Event Listeners (Unchanged) ---
+            // --- Event Listeners ---
             licenseKeyInput.addEventListener('input', () => {
+                // *** NEW: Restore original info text on first interaction ***
+                if (infoText.textContent !== originalInfoText) {
+                    infoText.textContent = originalInfoText;
+                }
                 clearTimeout(debounceTimer);
                 isLicenseValid = false;
                 balanceStatus.style.display = 'none';
@@ -227,7 +235,7 @@
             uploadArea.addEventListener('dragleave', (e) => { if (!fileInput.disabled) { e.preventDefault(); uploadArea.style.borderColor = '#D0D0D0'; } });
             uploadArea.addEventListener('drop', (e) => { if (!fileInput.disabled) { e.preventDefault(); uploadArea.style.borderColor = '#D0D0D0'; handleFiles(e.dataTransfer.files); } });
 
-            // --- Form Submission Logic (Unchanged) ---
+            // --- Form Submission Logic ---
             uploadForm.addEventListener('submit', (e) => {
                 e.preventDefault();
                 if (submitBtn.disabled) return;
@@ -274,7 +282,7 @@
                                 a.href = result.download_url;
                                 a.download = 'Artypacks_Conversion.zip';
                                 document.body.appendChild(a);
-                                a.click();
+a.click();
                                 a.remove();
                                 
                                 checkBalance();
@@ -302,9 +310,11 @@
                 })();
             });
 
-            // --- Initial Check on Load (Unchanged) ---
+            // --- Initial Check on Load ---
             if (licenseKeyInput.value) {
                 checkBalance();
+                // If key is autofilled, also switch the info text
+                infoText.textContent = originalInfoText;
             }
         });
     </script>
