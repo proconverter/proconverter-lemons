@@ -91,24 +91,27 @@
     </div>
 
     <!-- ===================================================================== -->
-    <!-- SCRIPT TAGS: Supabase library is added before your main script -->
+    <!-- FINAL SCRIPT IMPLEMENTATION (Using ES Module Import) -->
     <!-- ===================================================================== -->
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    
     <script type="module">
+        // STEP 1: Import the createClient function directly from the Supabase CDN.
+        // This is the most reliable method and replaces the old <script src="..."> tag.
+        import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
+
         // =====================================================================
-        //  1. SUPABASE CONNECTION
+        //  2. SUPABASE CONNECTION
         // =====================================================================
         const SUPABASE_URL = 'https://grajrxurqeojuvrvzstz.supabase.co';
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdyYWpyeHVycWVvanV2cnZ6c3R6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTYzNDQ4MTIsImV4cCI6MjA3MTkyMDgxMn0.jPKh3z18iik94ToRazHgkx3_R5BE51H4ws6Wh_sgKOo';
         
-        // THE ACTUAL FIX: Using capital 'S' for the Supabase object.
-        const supabase = Supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY );
-        console.log('Supabase Client Initialized:', supabase);
+        // Now we can create the client because the function was imported above.
+        const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY );
+        
+        console.log('Supabase Client Initialized (ESM Method):', supabase);
 
 
         // =====================================================================
-        //  2. DOM ELEMENT REFERENCES (Unchanged)
+        //  3. DOM ELEMENT REFERENCES (Unchanged)
         // =====================================================================
         const licenseKeyInput = document.getElementById('license_key');
         const balanceStatus = document.getElementById('balanceStatus');
@@ -127,7 +130,7 @@
         let currentBalance = 0;
 
         // =====================================================================
-        //  3. HELPER FUNCTIONS (Unchanged)
+        //  4. HELPER FUNCTIONS (Unchanged)
         // =====================================================================
         window.openModal = (modalId) => document.getElementById(modalId).style.display = "block";
         window.closeModal = (modalId) => document.getElementById(modalId).style.display = "none";
@@ -159,14 +162,14 @@
         };
 
         // =====================================================================
-        //  4. CORE LOGIC - CHECK BALANCE (MODIFIED FOR SUPABASE)
+        //  5. CORE LOGIC - CHECK BALANCE (Unchanged)
         // =====================================================================
         const checkBalance = async () => {
             const licenseKey = licenseKeyInput.value.trim();
             isLicenseValid = false;
             setUploadAreaEnabled(false);
             
-            if (licenseKey.length < 8) { // Basic validation
+            if (licenseKey.length < 8) {
                 balanceStatus.style.display = 'none';
                 checkSubmitButtonState();
                 return;
@@ -177,16 +180,13 @@
             balanceStatus.style.display = 'block';
             
             try {
-                // Query Supabase directly
                 const { data, error } = await supabase
-                    .from('licenses') // The name of your table
-                    .select('sessions_remaining, is_active') // The columns you want to get
-                    .eq('license_key', licenseKey) // Find the row where license_key matches
-                    .single(); // We expect only one result
+                    .from('licenses')
+                    .select('sessions_remaining, is_active')
+                    .eq('license_key', licenseKey)
+                    .single();
 
                 if (error && error.code !== 'PGRST116') {
-                    // PGRST116 means "no rows found", which is not a server error.
-                    // Any other error is a real problem.
                     throw new Error('Could not connect to the license server. Please try again.');
                 }
 
@@ -220,7 +220,7 @@
         };
 
         // =====================================================================
-        //  5. FILE HANDLING & FORM SUBMISSION (Unchanged for now)
+        //  6. FILE HANDLING & FORM SUBMISSION (Unchanged)
         // =====================================================================
         const renderFileList = () => {
             fileListDisplay.innerHTML = '';
