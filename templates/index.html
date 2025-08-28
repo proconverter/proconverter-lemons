@@ -44,7 +44,7 @@
                         <div class="upload-area disabled" id="uploadArea">
                             <svg class="upload-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
                             <p class="upload-text"><strong>Click to upload</strong> or drag and drop</p>
-                            <p class="upload-subtext">1 or more .brushset files / 50MB total</p>
+                            <p class="upload-subtext">1 to 3 .brushset files / 50MB total</p>
                         </div>
                     </label>
                     <input type="file" id="brush_files" name="brush_files" accept=".brushset" multiple style="display: none;" disabled>
@@ -135,7 +135,7 @@
                 submitBtn.disabled = !(isLicenseValid && selectedFiles.length > 0);
             };
 
-            // --- UPDATED: checkBalance Function with "Buy More" link ---
+            // --- checkBalance Function with Polished Messages ---
             const checkBalance = async () => {
                 const licenseKey = licenseKeyInput.value.trim();
                 isLicenseValid = false;
@@ -154,7 +154,16 @@
                 try {
                     const response = await fetch(`/check-license?license_key=${licenseKey}`);
                     const result = await response.json();
-                    if (!response.ok) throw new Error(result.message);
+                    
+                    if (!response.ok) {
+                        // Display the user-friendly message from the backend
+                        balanceStatus.textContent = result.message;
+                        balanceStatus.className = 'balance-status error';
+                        isLicenseValid = false;
+                        setUploadAreaEnabled(false);
+                        checkSubmitButtonState();
+                        return;
+                    }
                     
                     currentBalance = result.remaining;
                     isLicenseValid = currentBalance > 0;
@@ -164,58 +173,40 @@
                         balanceStatus.innerHTML = `Valid Key! Remaining Conversions: <strong>${currentBalance}</strong>`;
                         balanceStatus.className = 'balance-status success';
                     } else {
-                        // *** THIS IS THE NEW LOGIC ***
-                        // Replace the placeholder URL with your actual Etsy listing URL
-                        const etsyListingUrl = 'https://www.etsy.com/your/listing/url/here';
+                        const etsyListingUrl = 'https://www.etsy.com/listing/1782485802/10-conversion-credits-for-procreate';
                         balanceStatus.innerHTML = `No conversions left. <a href="${etsyListingUrl}" target="_blank">Buy more credits here!</a>`;
                         balanceStatus.className = 'balance-status error';
                     }
-                // This is inside the checkBalance function
-} catch (error) {
-    balanceStatus.textContent = "Your license isn't valid. Please try again."; // <--- THIS IS THE NEW LINE
-    balanceStatus.className = 'balance-status error';
-    isLicenseValid = false;
-    setUploadAreaEnabled(false);
-}
-                checkSubmitButtonState();
-            };
-
-            // --- File List and Handling Functions (Unchanged) ---
-            const renderFileList = () => {
-                fileListDisplay.innerHTML = '';
-                if (selectedFiles.length > 0) {
-                    fileListDisplay.style.display = 'block';
-                    selectedFiles.forEach((file, index) => {
-                        const item = document.createElement('div');
-                        item.className = 'file-list-item';
-                        item.innerHTML = `<span class="file-name">${file.name}</span><span class="status status-pending" id="status-${index}">Pending</span><span class="remove-file-btn" data-index="${index}">&times;</span>`;
-                        fileListDisplay.appendChild(item);
-                    });
-                    document.querySelectorAll('.remove-file-btn').forEach(button => {
-                        button.addEventListener('click', (e) => {
-                            const indexToRemove = parseInt(e.target.getAttribute('data-index'), 10);
-                            selectedFiles.splice(indexToRemove, 1);
-                            renderFileList();
-                        });
-                    });
-                } else {
-                    fileListDisplay.style.display = 'none';
+                } catch (error ) {
+                    // This catches network errors or if the server is down
+                    balanceStatus.textContent = "Your license isn't valid. Please try again.";
+                    balanceStatus.className = 'balance-status error';
+                    isLicenseValid = false;
+                    setUploadAreaEnabled(false);
                 }
                 checkSubmitButtonState();
             };
+
+            // --- handleFiles Function with 3-File Limit ---
             const handleFiles = (files) => {
                 if (fileInput.disabled) return;
                 let currentFiles = Array.from(files);
                 let errors = [];
                 currentFiles.forEach(file => {
-                    if (selectedFiles.length >= 10) { if (!errors.includes('You can upload a maximum of 10 files.')) errors.push('You can upload a maximum of 10 files.'); return; }
+                    if (selectedFiles.length >= 3) {
+                        if (!errors.includes('You can convert up to 3 files at a time.')) errors.push('You can convert up to 3 files at a time.');
+                        return;
+                    }
                     if (selectedFiles.some(f => f.name === file.name && f.size === file.size)) return;
-                    if (!file.name.toLowerCase().endsWith('.brushset')) { if (!errors.includes('Please select only .brushset files.')) errors.push('Please select only .brushset files.'); return; }
+                    if (!file.name.toLowerCase().endsWith('.brushset')) {
+                        if (!errors.includes('Please choose .brushset files only.')) errors.push('Please choose .brushset files only.');
+                        return;
+                    }
                     selectedFiles.push(file);
                 });
                 const totalSize = selectedFiles.reduce((acc, file) => acc + file.size, 0);
                 if (totalSize > 50 * 1024 * 1024) {
-                    errors.push('Total file size cannot exceed 50MB.');
+                    errors.push('Please keep the total size under 50MB.');
                     selectedFiles.splice(selectedFiles.length - currentFiles.length);
                 }
                 if (errors.length > 0) showError(errors.join(' '));
@@ -286,13 +277,12 @@
                                 a.click();
                                 a.remove();
                                 
-                                // After a successful conversion, re-check the balance to display the new total or the "Buy More" link
                                 checkBalance();
                             }
                         } catch (error) {
                             statusElem.textContent = 'Failed';
                             statusElem.className = 'status status-failed';
-                            showError(`Error: ${error.message}`);
+                            showError(error.message);
                             hasFailed = true;
                         }
                     }
